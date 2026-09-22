@@ -40,7 +40,6 @@ export function TourViewer({ tours, title }: { tours: Tour[]; title: string }) {
           title={`${title} — ${label}`}
           className="aspect-video w-full"
           allow="fullscreen; xr-spatial-tracking"
-          allowFullScreen
         />
       </div>
       <p className="mt-3 text-sm">
