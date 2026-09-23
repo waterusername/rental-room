@@ -1,54 +1,22 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
-import { createUnitShareAction, revokeUnitShareAction } from "@/lib/auth/share-actions";
+import { createUnitShareAction } from "@/lib/auth/share-actions";
 import type { ActionState } from "@/lib/auth/types";
-
-export type ShareLinkRow = {
-  id: string;
-  createdLabel: string;
-  expiresLabel: string;
-  revokedLabel: string;
-  viewCount: number;
-  lastViewedLabel: string;
-  status: "Active" | "Revoked" | "Expired";
-  canRevoke: boolean;
-  createdByEmail: string;
-};
 
 const inputClass = "mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 font-mono text-xs font-normal";
 
-export function ShareUnitPanel({
-  unitId,
-  unitTitle,
-  links,
-  showCreator,
-  loadError,
-}: {
-  unitId: string;
-  unitTitle: string;
-  links: ShareLinkRow[];
-  showCreator: boolean;
-  loadError?: string | null;
-}) {
+export function ShareUnitPanel({ unitId, unitTitle }: { unitId: string; unitTitle: string }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(createUnitShareAction, null);
 
   return (
     <aside className="mt-6 rounded-lg border border-tan-border bg-tan-soft px-4 py-4" aria-label="Share this unit">
-      <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-tan">
-        {showCreator ? "Shares of this unit" : "Your shares"}
-      </h2>
+      <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-tan">Share this unit</h2>
       <p className="mt-2 text-sm leading-6 text-ink">
         Create a link for a prospect. Anyone with the link can open {unitTitle} without signing in. It does not open
         the vacancy boards, other units, the access desk, or account pages. The link expires 1 day after you create
-        it. Revoke stops it immediately.
+        it.
       </p>
-      {loadError ? (
-        <p role="alert" className="mt-3 rounded-md border border-warn-border bg-warn-soft px-3 py-2 text-sm text-warn">
-          {loadError}
-        </p>
-      ) : null}
       <form action={action} className="mt-4">
         <input type="hidden" name="unitId" value={unitId} />
         {state?.error ? (
@@ -68,32 +36,6 @@ export function ShareUnitPanel({
           {pending ? "Creating…" : "Create share link"}
         </button>
       </form>
-      {links.length > 0 ? (
-        <ul className="mt-4 space-y-3">
-          {links.map((link) => (
-            <li key={link.id} className="rounded-md border border-tan-border bg-panel px-3 py-3 text-sm">
-              <p>Created {link.createdLabel}</p>
-              <p className="mt-1">Expires {link.expiresLabel}</p>
-              <p className="mt-1">Revoked {link.revokedLabel}</p>
-              <p className="mt-1">{link.status}</p>
-              <p className="mt-1 text-muted">
-                {link.viewCount} {link.viewCount === 1 ? "view" : "views"}
-                {link.lastViewedLabel !== "—" ? ` · last opened ${link.lastViewedLabel}` : ""}
-              </p>
-              {showCreator ? <p className="mt-1">Created by {link.createdByEmail}</p> : null}
-              {link.canRevoke ? (
-                <form action={revokeUnitShareAction} className="mt-2">
-                  <input type="hidden" name="shareId" value={link.id} />
-                  <input type="hidden" name="unitId" value={unitId} />
-                  <RevokeButton />
-                </form>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-sm text-muted">No share links yet for this unit.</p>
-      )}
     </aside>
   );
 }
@@ -133,18 +75,5 @@ function CopyShareLink({ url }: { url: string }) {
         {copied ? "Copied" : "Copy share link"}
       </button>
     </div>
-  );
-}
-
-function RevokeButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="inline-flex min-h-11 items-center justify-center rounded-full border border-warn-border bg-warn-soft px-4 text-sm font-semibold text-warn disabled:opacity-60"
-    >
-      {pending ? "Revoking…" : "Revoke"}
-    </button>
   );
 }

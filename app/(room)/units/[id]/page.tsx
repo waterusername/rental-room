@@ -3,9 +3,7 @@ import { notFound } from "next/navigation";
 import { ShareUnitPanel } from "@/components/ShareUnitPanel";
 import { UnitDetail } from "@/components/UnitDetail";
 import { viewerCanBrowse } from "@/lib/auth/config";
-import { listUnitShareHistory } from "@/lib/auth/db";
 import { getCurrentSession } from "@/lib/auth/guards";
-import { formatUtc } from "@/lib/auth/http";
 import { rentSummary, statusLabel, unitLabel } from "@/lib/format";
 import { allListings, getListing } from "@/lib/inventory";
 
@@ -40,58 +38,12 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
 
   const session = await getCurrentSession();
   const canShare = Boolean(session && !session.mustResetPassword && viewerCanBrowse(session));
-  let links: {
-    id: string;
-    createdLabel: string;
-    expiresLabel: string;
-    revokedLabel: string;
-    viewCount: number;
-    lastViewedLabel: string;
-    status: "Active" | "Revoked" | "Expired";
-    canRevoke: boolean;
-    createdByEmail: string;
-  }[] = [];
-  let loadError: string | null = null;
-  if (canShare && session) {
-    try {
-      const rows = await listUnitShareHistory({
-        unitId: listing.id,
-        actorUserId: session.userId,
-        actorIsAdmin: session.role === "admin",
-      });
-      links = rows.map((row) => ({
-        id: row.id,
-        createdLabel: formatUtc(row.createdAt),
-        expiresLabel: formatUtc(row.expiresAt),
-        revokedLabel: formatUtc(row.revokedAt),
-        viewCount: row.viewCount,
-        lastViewedLabel: formatUtc(row.lastViewedAt),
-        status: row.status === "active" ? "Active" : row.status === "revoked" ? "Revoked" : "Expired",
-        canRevoke: row.status === "active",
-        createdByEmail: row.createdByEmail,
-      }));
-    } catch (error) {
-      console.error("Share list failed", error instanceof Error ? error.message : "unknown");
-      loadError = "Share links are unavailable right now.";
-    }
-  }
-
   const unitTitle = `${listing.address}, ${unitLabel(listing.unit)}`;
 
   return (
     <UnitDetail
       listing={listing}
-      notice={
-        canShare ? (
-          <ShareUnitPanel
-            unitId={listing.id}
-            unitTitle={unitTitle}
-            links={links}
-            showCreator={session?.role === "admin"}
-            loadError={loadError}
-          />
-        ) : null
-      }
+      notice={canShare ? <ShareUnitPanel unitId={listing.id} unitTitle={unitTitle} /> : null}
     />
   );
 }

@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ShareHistoryTable } from "@/components/ShareHistoryTable";
 import { requireUser } from "@/lib/auth/guards";
-import { listSharesByUser } from "@/lib/auth/db";
 import { paymentsEnforced, viewerCanBrowse } from "@/lib/auth/config";
 import { BILLING_LABEL } from "@/lib/auth/types";
 
@@ -15,7 +13,6 @@ export default async function AccountPage() {
   const session = await requireUser();
   const stripeOn = paymentsEnforced();
   const canBrowse = viewerCanBrowse(session);
-  const shares = await listSharesByUser(session.userId, 50);
 
   return (
     <>
@@ -35,17 +32,6 @@ export default async function AccountPage() {
             : "The vacancy boards stay closed until billing is complimentary or the $100 USD monthly subscription is paid."}
         {stripeOn ? "" : " Payment collection is off on this server, so an active account is not blocked for billing."}
       </p>
-      <section className="mt-8">
-        <h2 className="font-serif text-2xl font-semibold">Your shares</h2>
-        <p className="mt-2 text-sm text-muted">
-          Units you sent with a single-unit link. This list is only yours.
-          {session.role === "admin" ? " The access desk shows every broker." : ""}
-        </p>
-        <ShareHistoryTable rows={shares.rows} empty="You have not shared a unit yet." />
-        {shares.total > shares.rows.length ? (
-          <p className="mt-2 text-sm text-muted">Showing the latest 50 links.</p>
-        ) : null}
-      </section>
       <div className="mt-6 flex flex-wrap gap-4 text-sm font-semibold">
         <Link href="/account/password" className="text-accent">
           Change password
