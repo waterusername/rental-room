@@ -820,20 +820,30 @@ export async function createUnitShare(input: {
   };
 }
 
-export async function readActiveShare(token: string, now = Date.now()): Promise<UnitShareRecord | null> {
-  if (!isShareToken(token) || !databaseConfig()) return null;
+export type ShareGate =
+  | { status: "open"; share: UnitShareRecord }
+  | { status: "expired" | "revoked" | "unavailable" };
+
+export async function readShareGate(token: string, now = Date.now()): Promise<ShareGate> {
+  if (!isShareToken(token) || !databaseConfig()) return { status: "unavailable" };
   await ensureSchema();
   const result = await getClient().execute({
     sql: `SELECT ${SHARE_COLUMNS} FROM unit_shares WHERE token_hash = ?`,
     args: [hashToken(token)],
   });
   const row = result.rows[0] as unknown as UnitShareRow | undefined;
-  if (!row) return null;
+  if (!row) return { status: "unavailable" };
   const share = mapShare(row, now);
-  if (!shareIsActive(share, now)) return null;
+  if (share.revokedAt) return { status: "revoked" };
+  if (!shareIsActive(share, now)) return { status: "expired" };
   const creator = await findUserById(share.createdBy);
-  if (!shareCreatorStillAllows(creator)) return null;
-  return share;
+  if (!shareCreatorStillAllows(creator)) return { status: "unavailable" };
+  return { status: "open", share };
+}
+
+export async function readActiveShare(token: string, now = Date.now()): Promise<UnitShareRecord | null> {
+  const gate = await readShareGate(token, now);
+  return gate.status === "open" ? gate.share : null;
 }
 
 export async function listUnitShareHistory(input: {

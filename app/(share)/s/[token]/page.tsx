@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ShareClosed } from "@/components/ShareClosed";
 import { UnitDetail } from "@/components/UnitDetail";
-import { readActiveShare, recordShareView } from "@/lib/auth/db";
+import { readShareGate, recordShareView } from "@/lib/auth/db";
 import { isShareToken } from "@/lib/auth/share-access";
 import { unitLabel } from "@/lib/format";
 import { getListing } from "@/lib/inventory";
@@ -17,8 +18,11 @@ export async function generateMetadata({
   const closed = { title: "Link unavailable", robots: { index: false, follow: false }, referrer: "no-referrer" as const };
   if (!isShareToken(token)) return closed;
   try {
-    const share = await readActiveShare(token);
-    const listing = share ? getListing(share.unitId) : undefined;
+    const gate = await readShareGate(token);
+    if (gate.status === "expired") return { ...closed, title: "Link expired" };
+    if (gate.status === "revoked") return { ...closed, title: "Link revoked" };
+    if (gate.status !== "open") return closed;
+    const listing = getListing(gate.share.unitId);
     if (!listing) return closed;
     return {
       title: `${listing.address} ${unitLabel(listing.unit)}`,
@@ -36,14 +40,16 @@ export default async function SharedUnitPage({ params }: { params: Promise<{ tok
   const { token } = await params;
   if (!isShareToken(token)) notFound();
 
-  let share: Awaited<ReturnType<typeof readActiveShare>> = null;
+  let gate: Awaited<ReturnType<typeof readShareGate>> = { status: "unavailable" };
   try {
-    share = await readActiveShare(token);
+    gate = await readShareGate(token);
   } catch (error) {
     console.error("Share lookup failed", error instanceof Error ? error.message : "unknown");
     notFound();
   }
-  if (!share) notFound();
+  if (gate.status === "expired" || gate.status === "revoked") return <ShareClosed reason={gate.status} />;
+  if (gate.status !== "open") notFound();
+  const share = gate.share;
 
   const listing = getListing(share.unitId);
   if (!listing) notFound();

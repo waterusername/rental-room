@@ -52,7 +52,17 @@ test("unit share tokens are hashed, scoped, expiring, and revocable", async () =
   assert.equal(created.share.unitLabel, "344 Targee Street, Unit 1B");
   assert.equal(created.share.lastViewedAt, null);
   const lifetime = Date.parse(created.share.expiresAt) - Date.parse(created.share.createdAt);
-  assert.equal(lifetime, 14 * 24 * 60 * 60 * 1000);
+  assert.equal(lifetime, 24 * 60 * 60 * 1000);
+  const longer = await db.createUnitShare({
+    unitId: "apt-longer-window",
+    createdBy: broker.id,
+    createdByEmail: broker.email,
+    ttlMs: 14 * 24 * 60 * 60 * 1000,
+  });
+  assert.equal(
+    Date.parse(longer.share.expiresAt) - Date.parse(longer.share.createdAt),
+    14 * 24 * 60 * 60 * 1000,
+  );
 
   const active = await db.readActiveShare(created.token);
   assert.equal(active?.unitId, "apt-344-targee-street-unit-1b");
@@ -113,12 +123,16 @@ test("unit share tokens are hashed, scoped, expiring, and revocable", async () =
     ttlMs: -1000,
   });
   assert.equal(await db.readActiveShare(expired.token), null);
+  assert.equal((await db.readShareGate(expired.token)).status, "expired");
+  assert.equal((await db.readShareGate("a".repeat(43))).status, "unavailable");
 
   assert.equal(
     await db.revokeUnitShare({ id: created.share.id, actorUserId: broker.id, actorIsAdmin: false }),
     true,
   );
   assert.equal(await db.readActiveShare(created.token), null);
+  assert.equal((await db.readShareGate(created.token)).status, "revoked");
+  assert.ok(created.share.revokedAt == null);
 
   const otherShare = await db.createUnitShare({
     unitId: "apt-36-grove-avenue-unit-1",

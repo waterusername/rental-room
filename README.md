@@ -66,9 +66,9 @@ A signed-in broker or administrator who can open the boards can send a prospect 
 2. Copy the URL and send it to the prospect. The raw link is shown once. The access database stores a SHA-256 of the token, the link id, the broker’s user id and email, the unit id, and the address label. It does not store the raw URL.
 3. The prospect can open that unit — tour, floor plan, rent, and the rest of the unit page — without a broker login.
 4. The same link does not open the homepage, category boards, other units, the access desk, or account pages. Those still require a broker session.
-5. The link expires 14 days after it is created. **Revoke** on the unit page stops it immediately. A disabled account, or an outside broker who can no longer browse because billing lapsed, also stops that person’s links.
+5. The link expires 1 day after it is created unless the broker chooses 3, 7, or 14 days. **Revoke** on the unit page stops it immediately. A disabled account, or an outside broker who can no longer browse because billing lapsed, also stops that person’s links. An expired or revoked link shows that it is closed and does not show the unit.
 6. Administrators can revoke any active link on the unit. A broker can revoke only links they created.
-7. Access desk lists, for each broker, the units they shared, when, and whether the link is still active. Brokers see their own links on the unit page and under Account. Opening a link adds a view and a last-opened time. Expired and revoked rows stay in that history.
+7. Access desk lists, for each broker, the units they shared, with created, expires, revoked, and status (active, expired, or revoked). Brokers see their own links on the unit page and under Account. Opening a link adds a view and a last-opened time. Expired and revoked rows stay in that history.
 
 The `unit_shares` table is created in the existing Turso database the first time the app connects. If the unit is later removed from the vacancy file, the link stops opening it. The address label from the day it was shared remains on the record.
 

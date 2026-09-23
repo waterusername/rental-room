@@ -9,6 +9,7 @@ export type ShareLinkRow = {
   id: string;
   createdLabel: string;
   expiresLabel: string;
+  revokedLabel: string;
   viewCount: number;
   lastViewedLabel: string;
   status: "Active" | "Revoked" | "Expired";
@@ -22,6 +23,7 @@ export function ShareUnitPanel({
   unitId,
   unitTitle,
   ttlDays,
+  ttlChoices,
   links,
   showCreator,
   loadError,
@@ -29,6 +31,7 @@ export function ShareUnitPanel({
   unitId: string;
   unitTitle: string;
   ttlDays: number;
+  ttlChoices: readonly number[];
   links: ShareLinkRow[];
   showCreator: boolean;
   loadError?: string | null;
@@ -42,8 +45,9 @@ export function ShareUnitPanel({
       </h2>
       <p className="mt-2 text-sm leading-6 text-ink">
         Create a link for a prospect. Anyone with the link can open {unitTitle} without signing in. It does not open
-        the vacancy boards, other units, the access desk, or account pages. The link expires {ttlDays} days after you
-        create it. Revoke stops it immediately.
+        the vacancy boards, other units, the access desk, or account pages. It expires{" "}
+        {ttlDays === 1 ? "1 day" : `${ttlDays} days`} after you create it unless you choose a longer window. Revoke
+        stops it immediately.
       </p>
       {loadError ? (
         <p role="alert" className="mt-3 rounded-md border border-warn-border bg-warn-soft px-3 py-2 text-sm text-warn">
@@ -52,6 +56,20 @@ export function ShareUnitPanel({
       ) : null}
       <form action={action} className="mt-4">
         <input type="hidden" name="unitId" value={unitId} />
+        <label className="block text-sm font-semibold">
+          How long it stays open
+          <select
+            name="ttlDays"
+            defaultValue={String(ttlDays)}
+            className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm font-normal"
+          >
+            {ttlChoices.map((days) => (
+              <option key={days} value={days}>
+                {days === 1 ? "1 day" : `${days} days`}
+              </option>
+            ))}
+          </select>
+        </label>
         {state?.error ? (
           <p role="alert" className="mb-3 rounded-md border border-warn-border bg-warn-soft px-3 py-2 text-sm text-warn">
             {state.error}
@@ -75,6 +93,7 @@ export function ShareUnitPanel({
             <li key={link.id} className="rounded-md border border-tan-border bg-panel px-3 py-3 text-sm">
               <p>Created {link.createdLabel}</p>
               <p className="mt-1">Expires {link.expiresLabel}</p>
+              <p className="mt-1">Revoked {link.revokedLabel}</p>
               <p className="mt-1">{link.status}</p>
               <p className="mt-1 text-muted">
                 {link.viewCount} {link.viewCount === 1 ? "view" : "views"}
