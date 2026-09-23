@@ -38,7 +38,7 @@ export function TourViewer({ tours, title }: { tours: Tour[]; title: string }) {
         <iframe
           src={tour.url}
           title={`${title} — ${label}`}
-          className="aspect-video w-full"
+          className="h-[min(70vh,760px)] min-h-80 w-full"
           allow="fullscreen; xr-spatial-tracking"
         />
       </div>

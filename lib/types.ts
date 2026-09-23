@@ -23,7 +23,6 @@ export type Listing = {
   tourReady: string | null;
   tours: Tour[];
   officeNotes: string | null;
-  daysVacant: number | null;
   reservationDate: string | null;
   daysSinceReservation: number | null;
   bedrooms: number | null;

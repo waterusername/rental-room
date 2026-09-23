@@ -52,11 +52,6 @@ export function ListingCard({ listing }: { listing: Listing }) {
           {listing.nycha === "YES" ? <li><Chip>NYCHA</Chip></li> : null}
           {listing.hpdTrustFund === "YES" ? <li><Chip>HPD / Trust Fund</Chip></li> : null}
           {listing.washerDryer === "YES" ? <li><Chip>W/D</Chip></li> : null}
-          {listing.daysVacant != null ? (
-            <li>
-              <Chip>{listing.daysVacant} days vacant</Chip>
-            </li>
-          ) : null}
           {listing.reservationDate ? (
             <li>
               <Chip>Reserved {formatDate(listing.reservationDate)}</Chip>

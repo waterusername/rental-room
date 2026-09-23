@@ -34,7 +34,7 @@ export const CATEGORY_ORDER: { category: Category; href: string; label: string; 
     href: "/",
     label: "Apartments",
     title: "Apartments",
-    lede: "Residential vacancies from the office sheet. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, days vacant, and a Matterport tour when a link is on file.",
+    lede: "Residential vacancies from the office sheet. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, and a Matterport tour when a link is on file.",
   },
   {
     category: "commercial",
