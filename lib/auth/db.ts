@@ -777,12 +777,11 @@ export async function createUnitShare(input: {
   unitLabel?: string;
   createdBy: string;
   createdByEmail: string;
-  ttlMs?: number;
   now?: number;
 }): Promise<{ token: string; share: UnitShareRecord }> {
   await ensureSchema();
   const now = input.now ?? Date.now();
-  const ttlMs = input.ttlMs ?? SHARE_TTL_MS;
+  const ttlMs = SHARE_TTL_MS;
   const nowIso = new Date(now).toISOString();
   const unitLabel = input.unitLabel?.trim() || input.unitId;
   const existing = await getClient().execute({

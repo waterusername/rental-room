@@ -6,14 +6,7 @@ import { unitLabel } from "@/lib/format";
 import { appBaseUrl } from "./stripe";
 import { createUnitShare, revokeUnitShare } from "./db";
 import { requireBrowse } from "./guards";
-import {
-  MAX_ACTIVE_UNIT_SHARES,
-  ShareLimitError,
-  parseShareTtlDays,
-  shareLink,
-  shareTtlLabel,
-  shareTtlMs,
-} from "./share-access";
+import { MAX_ACTIVE_UNIT_SHARES, ShareLimitError, shareLink } from "./share-access";
 import type { ActionState } from "./types";
 
 export async function createUnitShareAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -30,9 +23,6 @@ export async function createUnitShareAction(_prev: ActionState, formData: FormDa
     return { error: "Set the public site address before creating a share link." };
   }
 
-  const ttlDays = parseShareTtlDays(formData.get("ttlDays"));
-  if (ttlDays == null) return { error: "Choose 1 day, 3 days, 7 days, or 14 days." };
-
   try {
     const label = `${listing.address}, ${unitLabel(listing.unit)}`;
     const created = await createUnitShare({
@@ -40,12 +30,11 @@ export async function createUnitShareAction(_prev: ActionState, formData: FormDa
       unitLabel: label,
       createdBy: session.userId,
       createdByEmail: session.email,
-      ttlMs: shareTtlMs(ttlDays),
     });
     const url = shareLink(origin, created.token);
     revalidatePath(`/units/${listing.id}`);
     return {
-      ok: `Copy this link now. It will not be shown again. It opens only ${label} and expires in ${shareTtlLabel(ttlDays)} unless you revoke it.`,
+      ok: `Copy this link now. It will not be shown again. It opens only ${label} and expires in 1 day unless you revoke it.`,
       shareUrl: url,
     };
   } catch (error) {

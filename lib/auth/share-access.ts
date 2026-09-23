@@ -7,28 +7,10 @@
 import { viewerCanBrowse } from "./config";
 import type { BillingStatus, Role } from "./types";
 
-/** Default window when the broker does not pick another one. */
+/** Every share link lasts 24 hours. Brokers cannot choose another window. */
 export const SHARE_TTL_DAYS = 1;
 export const SHARE_TTL_MS = SHARE_TTL_DAYS * 24 * 60 * 60 * 1000;
-/** Longer windows a broker may choose. Anything else is rejected. */
-export const SHARE_TTL_CHOICES = [1, 3, 7, 14] as const;
 export const MAX_ACTIVE_UNIT_SHARES = 20;
-
-export function shareTtlMs(days: number): number {
-  return days * 24 * 60 * 60 * 1000;
-}
-
-export function shareTtlLabel(days: number): string {
-  return days === 1 ? "1 day" : `${days} days`;
-}
-
-/** Missing value uses the 1-day default. Any other window must be one of the choices. */
-export function parseShareTtlDays(value: unknown): number | null {
-  if (value == null || value === "") return SHARE_TTL_DAYS;
-  const text = String(value).trim();
-  const match = SHARE_TTL_CHOICES.find((days) => String(days) === text);
-  return match ?? null;
-}
 
 const TOKEN = "[A-Za-z0-9_-]{43}";
 const SHARE_PATH = new RegExp(
