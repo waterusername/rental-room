@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     default: "Grinberg Rental Room",
     template: "%s · Grinberg Rental Room",
   },
-  description: "Private vacancy boards for Grinberg Management brokers.",
+  description: "Private apartment vacancies for Grinberg Management brokers.",
   robots: { index: false, follow: false },
 };
 

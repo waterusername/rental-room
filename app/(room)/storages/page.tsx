@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import { CategoryView } from "@/components/CategoryView";
-
-export const metadata: Metadata = {
-  title: "Storages",
-};
+import { redirect } from "next/navigation";
 
 export default function StoragesPage() {
-  return <CategoryView category="storage" />;
+  redirect("/");
 }
