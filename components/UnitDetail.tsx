@@ -74,7 +74,7 @@ export function UnitDetail({
           </h2>
           <div className="mt-4 space-y-6">
             {floorPlans.map((floorPlan, index) => (
-              <div key={floorPlan.src} className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_13rem]">
+              <div key={direct ? `plan-${index}` : floorPlan.src} className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_13rem]">
                 <figure className="overflow-hidden rounded-lg border border-line bg-white shadow-[var(--shadow)]">
                   {floorPlan.caption ? (
                     <figcaption className="border-b border-line px-4 py-3 text-sm font-semibold">
