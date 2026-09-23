@@ -47,7 +47,7 @@ The script skips files that are already downloaded. Pass `--force` to replace th
 
 `data/street-view-manifest.json` maps each normalized address to `/street-view/<slug>.jpg`.
 
-Apartment detail pages also show a Matterport floor plan when `public/layouts/` has a PNG whose model id matches the unit’s tour URL (`m=`). Units listed without a layout simply omit that section.
+Every unit detail page shows each Matterport link stored on that row. A floor plan is shown when `public/layouts/` has a PNG whose model id matches the tour URL (`m=`). Commercial and garage tours use the same rule. Units with a tour but no layout file still show the tour and omit the floor plan.
 
 ## What is not in v1
 

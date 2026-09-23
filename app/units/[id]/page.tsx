@@ -17,7 +17,7 @@ import {
   utilitiesLabel,
 } from "@/lib/format";
 import { allListings, categoryMeta, getListing, inventory, trackerFor } from "@/lib/inventory";
-import { floorPlanFor } from "@/lib/floor-plan";
+import { floorPlansFor } from "@/lib/floor-plan";
 import { exteriorFor } from "@/lib/street-view";
 
 export function generateStaticParams() {
@@ -50,11 +50,8 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
   const note = uniqueNotes(listing.officeNotes, listing.notes);
   const title = `${listing.address}, ${unitLabel(listing.unit)}`;
   const photo = exteriorFor(listing);
-  const floorPlan = floorPlanFor(listing);
-  const extraTour =
-    tracker?.tourUrl && !listing.tours.some((tour) => tour.url === tracker.tourUrl)
-      ? tracker.tourUrl
-      : null;
+  const tours = trackerTour(listing.tours, tracker?.tourUrl ?? null);
+  const floorPlans = floorPlansFor({ ...listing, tours });
 
   return (
     <article className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -150,22 +147,34 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
         </dl>
       </section>
 
-      {floorPlan ? (
+      {floorPlans.length > 0 ? (
         <section className="mt-8" aria-labelledby="plan-heading">
           <h2 id="plan-heading" className="font-serif text-2xl font-semibold">
-            Floor plan
+            {floorPlans.length > 1 ? "Floor plans" : "Floor plan"}
           </h2>
           <p className="mt-2 text-sm text-muted">Layout from the Matterport property report for this unit.</p>
-          <figure className="mt-4 overflow-hidden rounded-lg border border-line bg-white shadow-[var(--shadow)]">
-            <Image
-              src={floorPlan.src}
-              alt={floorPlan.alt}
-              width={1600}
-              height={1200}
-              className="h-auto w-full"
-              sizes="(min-width: 1152px) 1152px, 100vw"
-            />
-          </figure>
+          <div className="mt-4 space-y-4">
+            {floorPlans.map((floorPlan) => (
+              <figure
+                key={floorPlan.src}
+                className="overflow-hidden rounded-lg border border-line bg-white shadow-[var(--shadow)]"
+              >
+                {floorPlan.caption ? (
+                  <figcaption className="border-b border-line px-4 py-3 text-sm font-semibold">
+                    {floorPlan.caption}
+                  </figcaption>
+                ) : null}
+                <Image
+                  src={floorPlan.src}
+                  alt={floorPlan.alt}
+                  width={1600}
+                  height={1200}
+                  className="h-auto w-full"
+                  sizes="(min-width: 1152px) 1152px, 100vw"
+                />
+              </figure>
+            ))}
+          </div>
         </section>
       ) : null}
 
@@ -173,24 +182,15 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
         <h2 id="tour-heading" className="font-serif text-2xl font-semibold">
           Virtual tour
         </h2>
-        {listing.tours.length > 0 ? (
+        {tours.length > 0 ? (
           <div className="mt-4">
-            <TourViewer tours={listing.tours} title={title} />
+            <TourViewer tours={tours} title={title} />
           </div>
         ) : (
           <p className="mt-4 rounded-lg border border-dashed border-line bg-panel px-4 py-6 text-muted">
             No Matterport link is on file for this unit.
           </p>
         )}
-        {extraTour ? (
-          <p className="mt-3 text-sm">
-            Residential tracker also lists{" "}
-            <a href={extraTour} className="font-semibold text-accent" target="_blank" rel="noreferrer">
-              another tour
-            </a>
-            .
-          </p>
-        ) : null}
       </section>
 
       <section className="mt-8" aria-labelledby="notes-heading">
@@ -234,6 +234,11 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dd className="mt-1 text-sm font-semibold">{value}</dd>
     </div>
   );
+}
+
+function trackerTour(tours: { url: string; label: string | null }[], tourUrl: string | null) {
+  if (!tourUrl || tours.some((tour) => tour.url === tourUrl)) return tours;
+  return [...tours, { url: tourUrl, label: "Additional tour" }];
 }
 
 function uniqueNotes(officeNotes: string | null, notes: string | null): string | null {
