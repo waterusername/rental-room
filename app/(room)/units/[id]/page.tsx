@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ShareUnitPanel } from "@/components/ShareUnitPanel";
 import { UnitDetail } from "@/components/UnitDetail";
 import { viewerCanBrowse } from "@/lib/auth/config";
-import { listActiveUnitShares } from "@/lib/auth/db";
+import { listUnitShareHistory } from "@/lib/auth/db";
 import { getCurrentSession } from "@/lib/auth/guards";
 import { formatUtc } from "@/lib/auth/http";
 import { SHARE_TTL_DAYS } from "@/lib/auth/share-access";
@@ -46,12 +46,15 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
     createdLabel: string;
     expiresLabel: string;
     viewCount: number;
+    lastViewedLabel: string;
+    status: "Active" | "Revoked" | "Expired";
+    canRevoke: boolean;
     createdByEmail: string;
   }[] = [];
   let loadError: string | null = null;
   if (canShare && session) {
     try {
-      const rows = await listActiveUnitShares({
+      const rows = await listUnitShareHistory({
         unitId: listing.id,
         actorUserId: session.userId,
         actorIsAdmin: session.role === "admin",
@@ -61,6 +64,9 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
         createdLabel: formatUtc(row.createdAt),
         expiresLabel: formatUtc(row.expiresAt),
         viewCount: row.viewCount,
+        lastViewedLabel: formatUtc(row.lastViewedAt),
+        status: row.status === "active" ? "Active" : row.status === "revoked" ? "Revoked" : "Expired",
+        canRevoke: row.status === "active",
         createdByEmail: row.createdByEmail,
       }));
     } catch (error) {

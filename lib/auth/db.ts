@@ -13,6 +13,7 @@ import {
   isShareToken,
   shareCreatorStillAllows,
   shareIsActive,
+  shareLifecycle,
 } from "./share-access";
 import type {
   AuthSession,
@@ -79,14 +80,17 @@ const SCHEMA = [
     id TEXT PRIMARY KEY,
     token_hash TEXT NOT NULL UNIQUE,
     unit_id TEXT NOT NULL,
+    unit_label TEXT NOT NULL,
     created_by TEXT NOT NULL,
     created_by_email TEXT NOT NULL,
     created_at TEXT NOT NULL,
     expires_at TEXT NOT NULL,
     revoked_at TEXT,
-    view_count INTEGER NOT NULL DEFAULT 0
+    view_count INTEGER NOT NULL DEFAULT 0,
+    last_viewed_at TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_unit_shares_unit ON unit_shares (unit_id, created_by)`,
+  `CREATE INDEX IF NOT EXISTS idx_unit_shares_creator ON unit_shares (created_by, created_at)`,
 ];
 
 let client: Client | null = null;
@@ -133,10 +137,23 @@ async function migrate(): Promise<void> {
     sql: "DELETE FROM sessions WHERE expires_at < ? AND (revoked_at IS NOT NULL OR expires_at < ?)",
     args: [cutoff, cutoff],
   });
-  await db.execute({
-    sql: "DELETE FROM unit_shares WHERE expires_at < ? OR (revoked_at IS NOT NULL AND revoked_at < ?)",
-    args: [cutoff, cutoff],
-  });
+  await addColumn(db, "unit_shares", "unit_label", "TEXT");
+  await addColumn(db, "unit_shares", "last_viewed_at", "TEXT");
+  await db.execute(
+    "UPDATE unit_shares SET unit_label = unit_id WHERE unit_label IS NULL OR unit_label = ''",
+  );
+}
+
+async function addColumn(
+  db: Client,
+  table: "unit_shares",
+  column: "unit_label" | "last_viewed_at",
+  definition: string,
+): Promise<void> {
+  const info = await db.execute(`PRAGMA table_info(${table})`);
+  const exists = info.rows.some((row) => String(row.name) === column);
+  if (exists) return;
+  await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
 type UserRow = {
@@ -719,32 +736,45 @@ export async function listLoginHistory(userId: string, limit = 200): Promise<{ r
   };
 }
 
+const SHARE_COLUMNS = `id, unit_id, unit_label, created_by, created_by_email, created_at, expires_at, revoked_at, view_count, last_viewed_at`;
+
 type UnitShareRow = {
   id: string;
   unit_id: string;
+  unit_label: string | null;
   created_by: string;
   created_by_email: string;
   created_at: string;
   expires_at: string;
   revoked_at: string | null;
   view_count: number | bigint;
+  last_viewed_at: string | null;
 };
 
-function mapShare(row: UnitShareRow): UnitShareRecord {
+function mapShare(row: UnitShareRow, now: number): UnitShareRecord {
+  const unitId = row.unit_id;
+  const share = {
+    expiresAt: row.expires_at,
+    revokedAt: row.revoked_at,
+  };
   return {
     id: row.id,
-    unitId: row.unit_id,
+    unitId,
+    unitLabel: row.unit_label?.trim() || unitId,
     createdBy: row.created_by,
     createdByEmail: row.created_by_email,
     createdAt: row.created_at,
     expiresAt: row.expires_at,
     revokedAt: row.revoked_at,
     viewCount: Number(row.view_count ?? 0),
+    lastViewedAt: row.last_viewed_at,
+    status: shareLifecycle(share, now),
   };
 }
 
 export async function createUnitShare(input: {
   unitId: string;
+  unitLabel?: string;
   createdBy: string;
   createdByEmail: string;
   ttlMs?: number;
@@ -754,6 +784,7 @@ export async function createUnitShare(input: {
   const now = input.now ?? Date.now();
   const ttlMs = input.ttlMs ?? SHARE_TTL_MS;
   const nowIso = new Date(now).toISOString();
+  const unitLabel = input.unitLabel?.trim() || input.unitId;
   const existing = await getClient().execute({
     sql: `SELECT COUNT(*) AS n FROM unit_shares
       WHERE unit_id = ? AND created_by = ? AND revoked_at IS NULL AND expires_at > ?`,
@@ -767,21 +798,24 @@ export async function createUnitShare(input: {
   const expires = new Date(now + ttlMs).toISOString();
   await getClient().execute({
     sql: `INSERT INTO unit_shares (
-      id, token_hash, unit_id, created_by, created_by_email, created_at, expires_at, view_count
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
-    args: [id, hashToken(token), input.unitId, input.createdBy, input.createdByEmail, nowIso, expires],
+      id, token_hash, unit_id, unit_label, created_by, created_by_email, created_at, expires_at, view_count
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+    args: [id, hashToken(token), input.unitId, unitLabel, input.createdBy, input.createdByEmail, nowIso, expires],
   });
   return {
     token,
     share: {
       id,
       unitId: input.unitId,
+      unitLabel,
       createdBy: input.createdBy,
       createdByEmail: input.createdByEmail,
       createdAt: nowIso,
       expiresAt: expires,
       revokedAt: null,
       viewCount: 0,
+      lastViewedAt: null,
+      status: shareLifecycle({ expiresAt: expires, revokedAt: null }, now),
     },
   };
 }
@@ -790,36 +824,75 @@ export async function readActiveShare(token: string, now = Date.now()): Promise<
   if (!isShareToken(token) || !databaseConfig()) return null;
   await ensureSchema();
   const result = await getClient().execute({
-    sql: `SELECT id, unit_id, created_by, created_by_email, created_at, expires_at, revoked_at, view_count
-      FROM unit_shares WHERE token_hash = ?`,
+    sql: `SELECT ${SHARE_COLUMNS} FROM unit_shares WHERE token_hash = ?`,
     args: [hashToken(token)],
   });
   const row = result.rows[0] as unknown as UnitShareRow | undefined;
   if (!row) return null;
-  const share = mapShare(row);
+  const share = mapShare(row, now);
   if (!shareIsActive(share, now)) return null;
   const creator = await findUserById(share.createdBy);
   if (!shareCreatorStillAllows(creator)) return null;
   return share;
 }
 
-export async function listActiveUnitShares(input: {
+export async function listUnitShareHistory(input: {
   unitId: string;
   actorUserId: string;
   actorIsAdmin: boolean;
-  now?: number;
+  limit?: number;
 }): Promise<UnitShareRecord[]> {
   await ensureSchema();
-  const nowIso = new Date(input.now ?? Date.now()).toISOString();
   const result = await getClient().execute({
-    sql: `SELECT id, unit_id, created_by, created_by_email, created_at, expires_at, revoked_at, view_count
+    sql: `SELECT ${SHARE_COLUMNS}
       FROM unit_shares
-      WHERE unit_id = ? AND revoked_at IS NULL AND expires_at > ?
-        AND (? = 1 OR created_by = ?)
-      ORDER BY created_at DESC`,
-    args: [input.unitId, nowIso, input.actorIsAdmin ? 1 : 0, input.actorUserId],
+      WHERE unit_id = ? AND (? = 1 OR created_by = ?)
+      ORDER BY created_at DESC
+      LIMIT ?`,
+    args: [input.unitId, input.actorIsAdmin ? 1 : 0, input.actorUserId, input.limit ?? 50],
   });
-  return result.rows.map((row) => mapShare(row as unknown as UnitShareRow));
+  const now = Date.now();
+  return result.rows.map((row) => mapShare(row as unknown as UnitShareRow, now));
+}
+
+export async function listSharesByUser(userId: string, limit = 200): Promise<{ rows: UnitShareRecord[]; total: number }> {
+  await ensureSchema();
+  const db = getClient();
+  const count = await db.execute({
+    sql: "SELECT COUNT(*) AS n FROM unit_shares WHERE created_by = ?",
+    args: [userId],
+  });
+  const result = await db.execute({
+    sql: `SELECT ${SHARE_COLUMNS}
+      FROM unit_shares
+      WHERE created_by = ?
+      ORDER BY created_at DESC
+      LIMIT ?`,
+    args: [userId, limit],
+  });
+  return {
+    total: Number(count.rows[0]?.n ?? 0),
+    rows: result.rows.map((row) => mapShare(row as unknown as UnitShareRow, Date.now())),
+  };
+}
+
+export type ShareCount = { links: number; units: number };
+
+export async function shareCountsByUser(): Promise<Map<string, ShareCount>> {
+  await ensureSchema();
+  const result = await getClient().execute(
+    `SELECT created_by, COUNT(*) AS links, COUNT(DISTINCT unit_id) AS units
+     FROM unit_shares
+     GROUP BY created_by`,
+  );
+  const counts = new Map<string, ShareCount>();
+  for (const row of result.rows) {
+    counts.set(String(row.created_by), {
+      links: Number(row.links ?? 0),
+      units: Number(row.units ?? 0),
+    });
+  }
+  return counts;
 }
 
 export async function revokeUnitShare(input: {
@@ -839,8 +912,8 @@ export async function revokeUnitShare(input: {
 export async function recordShareView(id: string, now = Date.now()): Promise<void> {
   await ensureSchema();
   await getClient().execute({
-    sql: `UPDATE unit_shares SET view_count = view_count + 1
+    sql: `UPDATE unit_shares SET view_count = view_count + 1, last_viewed_at = ?
       WHERE id = ? AND revoked_at IS NULL AND expires_at > ?`,
-    args: [id, new Date(now).toISOString()],
+    args: [new Date(now).toISOString(), id, new Date(now).toISOString()],
   });
 }

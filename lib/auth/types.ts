@@ -72,12 +72,15 @@ export type ActionState = {
 export type UnitShareRecord = {
   id: string;
   unitId: string;
+  unitLabel: string;
   createdBy: string;
   createdByEmail: string;
   createdAt: string;
   expiresAt: string;
   revokedAt: string | null;
   viewCount: number;
+  lastViewedAt: string | null;
+  status: "active" | "revoked" | "expired";
 };
 
 export type LoginHistoryRow = {

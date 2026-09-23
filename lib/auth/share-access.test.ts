@@ -6,6 +6,7 @@ import {
   isShareToken,
   shareCreatorStillAllows,
   shareIsActive,
+  shareLifecycle,
   shareLink,
 } from "./share-access.ts";
 
@@ -56,6 +57,16 @@ test("share URLs do not carry the unit id", () => {
   assert.equal(url.includes("targee"), false);
   assert.throws(() => shareLink("javascript:alert(1)", token));
   assert.throws(() => shareLink("https://rental-room-tau.vercel.app", "apt-344-targee-street-unit-1b"));
+});
+
+test("share history marks revoked before expired", () => {
+  const now = Date.parse("2026-09-23T12:00:00.000Z");
+  assert.equal(shareLifecycle({ expiresAt: "2026-10-07T12:00:00.000Z", revokedAt: null }, now), "active");
+  assert.equal(shareLifecycle({ expiresAt: "2026-09-22T12:00:00.000Z", revokedAt: null }, now), "expired");
+  assert.equal(
+    shareLifecycle({ expiresAt: "2026-09-22T12:00:00.000Z", revokedAt: "2026-09-23T11:00:00.000Z" }, now),
+    "revoked",
+  );
 });
 
 test("expired and revoked shares fail closed", () => {

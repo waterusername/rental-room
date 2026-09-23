@@ -24,14 +24,15 @@ export async function createUnitShareAction(_prev: ActionState, formData: FormDa
   }
 
   try {
+    const label = `${listing.address}, ${unitLabel(listing.unit)}`;
     const created = await createUnitShare({
       unitId: listing.id,
+      unitLabel: label,
       createdBy: session.userId,
       createdByEmail: session.email,
     });
     const url = shareLink(origin, created.token);
     revalidatePath(`/units/${listing.id}`);
-    const label = `${listing.address}, ${unitLabel(listing.unit)}`;
     return {
       ok: `Copy this link now. It will not be shown again. It opens only ${label} and expires in ${SHARE_TTL_DAYS} days unless you revoke it.`,
       shareUrl: url,
