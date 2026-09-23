@@ -1,6 +1,6 @@
 # Grinberg Rental Room
 
-A vacancy board for Grinberg rental inventory: apartments, commercial space, garages, and storages. It follows the browse-and-detail feel of a portfolio deal room, for rental units rather than development assemblages.
+A vacancy board for Grinberg apartments. It follows the browse-and-detail feel of a portfolio deal room, for rental units rather than development assemblages.
 
 Listings, tours, rents, and office notes come from `data/rental-listings.json`. The site does not call Google Sheets.
 
@@ -105,10 +105,10 @@ Use Stripe test keys until a real charge should go through. These variables stil
 
 1. Replace `data/rental-listings.json` with the new snapshot.
 2. Keep the same top-level shape: `source`, `contact`, and `listings`.
-3. Public boards read `listings.apartments`, `listings.commercial`, `listings.garages`, and `listings.storages`. Pipeline, reserved, and residential tracker rows stay in the file for matching and are not separate pages.
+3. The public site reads `listings.apartments` only. That array is the Available Apartments tab. `listings.commercial`, `listings.garages`, `listings.storages`, `listings.pipeline`, `listings.reserved`, and `listings.residentialTracker` stay in the file so the shape is stable, and they are empty. Those tabs are not pages.
 4. Restart the dev server, or redeploy. The file is imported at build time.
 
-The residential tracker is used to match apartments that already appear on the home grid. Tracker-only rows are not added as extra cards. Apartments are the residential rows from the first sheet tab (38 in the current snapshot).
+Rows from other tabs are not added as cards. The current snapshot has 39 apartments.
 
 `contact.applyEmail` is the apply mailto on each unit. The office phone is a call link. Dimitry’s number is plain text in the footer, not a call button.
 
@@ -116,7 +116,7 @@ Office notes are shown as written in the file. Edit a note in the JSON if it sho
 
 ## Apartment exterior photos
 
-Apartment cards and apartment detail pages show a street-level photo of the building. Units at the same address share one image in `public/street-view/`. Commercial, garages, storages, and the residential tracker do not get these photos.
+Apartment cards and apartment detail pages show a street-level photo of the building. Units at the same address share one image in `public/street-view/`.
 
 Refresh after the apartment sheet changes:
 
@@ -128,7 +128,7 @@ The script skips files that are already downloaded. Pass `--force` to replace th
 
 `data/street-view-manifest.json` maps each normalized address to `/street-view/<slug>.jpg`.
 
-Every unit detail page shows each Matterport link stored on that row. A floor plan is shown when `public/layouts/` has a PNG whose model id matches the tour URL (`m=`). Commercial and garage tours use the same rule. Units with a tour but no layout file still show the tour and omit the floor plan.
+Every unit detail page shows each Matterport link stored on that apartment. A floor plan is shown when `public/layouts/` has a PNG whose model id matches the tour URL (`m=`). Units with a tour but no layout file still show the tour and omit the floor plan.
 
 ## What is not in v1
 

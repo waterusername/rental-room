@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import { CategoryView } from "@/components/CategoryView";
-
-export const metadata: Metadata = {
-  title: "Commercial",
-};
+import { redirect } from "next/navigation";
 
 export default function CommercialPage() {
-  return <CategoryView category="commercial" />;
+  redirect("/");
 }

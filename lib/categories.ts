@@ -4,7 +4,7 @@ import type { Category } from "./types";
 const CATEGORY_COPY: Record<Category, { title: string; lede: string }> = {
   apartment: {
     title: "Apartments",
-    lede: "Residential vacancies from the office sheet. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, and a Matterport tour when a link is on file.",
+    lede: "Apartments from the Available Apartments tab. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, and a Matterport tour when a link is on file.",
   },
   commercial: {
     title: "Commercial",
