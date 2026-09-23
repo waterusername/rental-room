@@ -85,8 +85,9 @@ export default async function BrokerDetailPage({ params }: { params: Promise<{ i
       <section className="mt-10">
         <h2 className="font-serif text-2xl font-semibold">Units shared</h2>
         <p className="mt-2 max-w-3xl text-sm text-muted">
-          Every single-unit link this account created, including expired and revoked ones. The record stores this
-          email ({user.email}), the unit, and the link id. The secret URL is not stored. Times are UTC.
+          Every single-unit link this account created, including expired and revoked ones. This list is for
+          administrators. The record stores this email ({user.email}), the unit, and the link id. The secret URL is
+          not stored. Times are UTC. Revoke closes an active link immediately.
         </p>
         <ShareHistoryTable rows={detail.shares} empty="This account has not shared a unit." />
         {detail.sharesTruncated ? <p className="mt-2 text-sm text-muted">Showing the latest 200 links.</p> : null}

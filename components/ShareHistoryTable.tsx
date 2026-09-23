@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Chip } from "@/components/Chip";
+import { revokeUnitShareAction } from "@/lib/auth/share-actions";
 import { formatUtc } from "@/lib/auth/http";
 import type { UnitShareRecord } from "@/lib/auth/types";
 
@@ -26,6 +27,7 @@ export function ShareHistoryTable({ rows, empty }: { rows: UnitShareRecord[]; em
             <th className="px-3 py-3 font-semibold">Status</th>
             <th className="px-3 py-3 font-semibold">Views</th>
             <th className="px-3 py-3 font-semibold">Last opened</th>
+            <th className="px-3 py-3 font-semibold">Revoke</th>
           </tr>
         </thead>
         <tbody>
@@ -50,6 +52,22 @@ export function ShareHistoryTable({ rows, empty }: { rows: UnitShareRecord[]; em
                 </td>
                 <td className="px-3 py-3">{row.viewCount}</td>
                 <td className="px-3 py-3 whitespace-nowrap">{formatUtc(row.lastViewedAt)}</td>
+                <td className="px-3 py-3">
+                  {status === "active" ? (
+                    <form action={revokeUnitShareAction}>
+                      <input type="hidden" name="shareId" value={row.id} />
+                      <input type="hidden" name="unitId" value={row.unitId} />
+                      <button
+                        type="submit"
+                        className="inline-flex min-h-9 items-center justify-center rounded-full border border-warn-border bg-warn-soft px-3 text-xs font-semibold text-warn"
+                      >
+                        Revoke
+                      </button>
+                    </form>
+                  ) : (
+                    <span className="text-muted">—</span>
+                  )}
+                </td>
               </tr>
             );
           })}
