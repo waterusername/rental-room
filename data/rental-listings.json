@@ -1239,36 +1239,6 @@
         "notes": null
       },
       {
-        "id": "com-219-canal-street-store",
-        "category": "commercial",
-        "address": "219 Canal Street",
-        "unit": "Store",
-        "unitType": "Store",
-        "minRent": null,
-        "targetRent": null,
-        "potentialRent": 3500,
-        "zip": "10304",
-        "status": "Available",
-        "nycha": null,
-        "hpdTrustFund": null,
-        "utilitiesIncluded": null,
-        "washerDryer": null,
-        "tourReady": null,
-        "tours": [
-          {
-            "url": "https://my.matterport.com/show/?m=X6fLYuKpkjh",
-            "label": null
-          }
-        ],
-        "officeNotes": null,
-        "reservationDate": null,
-        "daysSinceReservation": null,
-        "bedrooms": null,
-        "baths": null,
-        "prospect": null,
-        "notes": null
-      },
-      {
         "id": "com-273-port-richmond-avenue-store",
         "category": "commercial",
         "address": "273 Port Richmond Avenue",
@@ -2861,18 +2831,6 @@
         "prospect": null,
         "status": null,
         "tourUrl": "https://my.matterport.com/show/?m=4Xzbag711BA",
-        "rent": null
-      },
-      {
-        "id": "track-219-canal-street-unit-1",
-        "address": "219 Canal Street",
-        "unit": "Unit 1",
-        "unitType": "3B/1B",
-        "zip": "10304",
-        "reserved": true,
-        "prospect": null,
-        "status": null,
-        "tourUrl": null,
         "rent": null
       },
       {
