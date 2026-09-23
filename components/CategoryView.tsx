@@ -1,5 +1,6 @@
 import { Browser } from "./Browser";
 import { categoryMeta, inventory, listingsFor } from "@/lib/inventory";
+import { exteriorFor } from "@/lib/street-view";
 import type { Category } from "@/lib/types";
 
 export function CategoryView({ category }: { category: Category }) {
@@ -41,7 +42,19 @@ export function CategoryView({ category }: { category: Category }) {
           ))}
         </ul>
       ) : null}
-      <Browser listings={listings} variant={isHome ? "apartment" : "inventory"} />
+      <Browser
+        listings={listings}
+        photos={Object.fromEntries(
+          listings.map((listing) => {
+            const photo = exteriorFor(listing);
+            return [
+              listing.id,
+              photo ? { src: photo.src, kind: photo.kind, alt: photo.alt, credit: photo.credit } : null,
+            ];
+          }),
+        )}
+        variant={isHome ? "apartment" : "inventory"}
+      />
     </div>
   );
 }

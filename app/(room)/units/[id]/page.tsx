@@ -17,6 +17,8 @@ import {
 } from "@/lib/format";
 import { allListings, categoryMeta, getListing, inventory, trackerFor } from "@/lib/inventory";
 import { floorPlansFor } from "@/lib/floor-plan";
+import { getCurrentSession } from "@/lib/auth/guards";
+import { viewerCanBrowse } from "@/lib/auth/config";
 import { exteriorFor } from "@/lib/street-view";
 
 export function generateStaticParams() {
@@ -30,6 +32,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
+  const session = await getCurrentSession();
+  if (!session || session.mustResetPassword || !viewerCanBrowse(session)) {
+    return { title: "Sign in" };
+  }
   const { id } = await params;
   const listing = getListing(id);
   if (!listing) return { title: "Unit not found" };

@@ -32,6 +32,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local access database (development only — production uses Turso)
+data/auth.local.db
+data/auth.local.db-*
 
 # vercel
 .vercel

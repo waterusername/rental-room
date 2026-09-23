@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
-import { SiteFooter } from "@/components/SiteFooter";
-import { SiteHeader } from "@/components/SiteHeader";
 import "./globals.css";
 
 const sans = Inter({
@@ -19,26 +17,14 @@ export const metadata: Metadata = {
     default: "Grinberg Rental Room",
     template: "%s · Grinberg Rental Room",
   },
-  description:
-    "Browse Grinberg Management rental vacancies, Matterport tours, and office notes from the vacancy sheet.",
+  description: "Private vacancy boards for Grinberg Management brokers.",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${sans.variable} ${serif.variable} h-full`}>
-      <body className="flex min-h-full flex-col bg-bg font-sans text-ink antialiased">
-        <a
-          href="#inventory"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-panel focus:px-3 focus:py-2"
-        >
-          Skip to listings
-        </a>
-        <SiteHeader />
-        <main id="inventory" className="flex-1">
-          {children}
-        </main>
-        <SiteFooter />
-      </body>
+      <body className="flex min-h-full flex-col bg-bg font-sans text-ink antialiased">{children}</body>
     </html>
   );
 }
