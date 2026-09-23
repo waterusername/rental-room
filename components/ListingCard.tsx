@@ -63,9 +63,6 @@ export function ListingCard({ listing }: { listing: Listing }) {
             </li>
           ) : null}
         </ul>
-        {listing.prospect ? (
-          <p className="mt-3 text-sm text-muted">Prospect: {listing.prospect}</p>
-        ) : null}
         <span className="sr-only">Open details for {name}</span>
         </div>
       </Link>

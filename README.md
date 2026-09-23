@@ -1,6 +1,6 @@
 # Grinberg Rental Room
 
-A vacancy board for Grinberg rental inventory: apartments, garages and storage, commercial space, pipeline units, and reservations. It follows the browse-and-detail feel of a portfolio deal room, for rental units rather than development assemblages.
+A vacancy board for Grinberg rental inventory: apartments, commercial space, garages, and storages. It follows the browse-and-detail feel of a portfolio deal room, for rental units rather than development assemblages.
 
 Listings, tours, rents, and office notes come from `data/rental-listings.json`. The site does not call Google Sheets.
 
@@ -24,10 +24,10 @@ Deploy on Vercel as a Next.js app. No environment variables are required.
 
 1. Replace `data/rental-listings.json` with the new snapshot.
 2. Keep the same top-level shape: `source`, `contact`, and `listings`.
-3. `listings` has `apartments`, `garagesStorage`, `commercial`, `pipeline`, `reserved`, and `residentialTracker`.
+3. Public boards read `listings.apartments`, `listings.commercial`, `listings.garages`, and `listings.storages`. Pipeline, reserved, and residential tracker rows stay in the file for matching and are not separate pages.
 4. Restart the dev server, or redeploy. The file is imported at build time.
 
-The residential tracker is used to match apartments that already appear on the home grid. Tracker-only rows are not added as extra cards.
+The residential tracker is used to match apartments that already appear on the home grid. Tracker-only rows are not added as extra cards. Apartments are the residential rows from the first sheet tab (38 in the current snapshot).
 
 `contact.applyEmail` is the apply mailto on each unit. The office phone is a call link. Dimitry’s number is plain text in the footer, not a call button.
 
@@ -35,7 +35,7 @@ Office notes are shown as written in the file. Edit a note in the JSON if it sho
 
 ## Apartment exterior photos
 
-Apartment cards and apartment detail pages show a street-level photo of the building. Units at the same address share one image in `public/street-view/`. Garages, commercial, pipeline, reserved, and the residential tracker do not get these photos.
+Apartment cards and apartment detail pages show a street-level photo of the building. Units at the same address share one image in `public/street-view/`. Commercial, garages, storages, and the residential tracker do not get these photos.
 
 Refresh after the apartment sheet changes:
 

@@ -19,15 +19,19 @@ export function CategoryView({ category }: { category: Category }) {
       </h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-muted">{meta.lede}</p>
       <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="In this list" value={String(listings.length)} />
-        <Stat label="With a tour" value={String(withTour)} />
         {isHome ? (
           <>
-            <Stat label="Garages & storage" value={String(inventory.listings.garagesStorage.length)} />
-            <Stat label="Reserved" value={String(inventory.listings.reserved.length)} />
+            <Stat label="Apartments" value={String(inventory.listings.apartments.length)} />
+            <Stat label="Commercial" value={String(inventory.listings.commercial.length)} />
+            <Stat label="Garages" value={String(inventory.listings.garages.length)} />
+            <Stat label="Storages" value={String(inventory.listings.storages.length)} />
           </>
         ) : (
-          <Stat label="Marked available" value={String(available)} />
+          <>
+            <Stat label="In this list" value={String(listings.length)} />
+            <Stat label="With a tour" value={String(withTour)} />
+            <Stat label="Marked available" value={String(available)} />
+          </>
         )}
       </dl>
       {isHome ? (

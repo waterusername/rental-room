@@ -6,8 +6,9 @@ import type { Category, InventoryFile, Listing, TrackerRow } from "./types";
 function asInventory(value: InventoryFile): InventoryFile {
   const groups = [
     "apartments",
-    "garagesStorage",
     "commercial",
+    "garages",
+    "storages",
     "pipeline",
     "reserved",
     "residentialTracker",
@@ -36,13 +37,6 @@ export const CATEGORY_ORDER: { category: Category; href: string; label: string; 
     lede: "Residential vacancies from the office sheet. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, days vacant, and a Matterport tour when a link is on file.",
   },
   {
-    category: "garage-storage",
-    href: "/garages",
-    label: "Garages & Storage",
-    title: "Garages & storage",
-    lede: "Garages, sheds, and storage rooms. Rows from the apartment sheet and the garage sheet are combined when they are the same space.",
-  },
-  {
     category: "commercial",
     href: "/commercial",
     label: "Commercial",
@@ -50,27 +44,26 @@ export const CATEGORY_ORDER: { category: Category; href: string; label: string; 
     lede: "Retail and storefront space, including extra Matterport links when one address has more than one tour.",
   },
   {
-    category: "pipeline",
-    href: "/pipeline",
-    label: "Pipeline",
-    title: "Pipeline",
-    lede: "Units still under construction or gut renovation, with the potential rent listed on the upcoming sheet.",
+    category: "garage",
+    href: "/garages",
+    label: "Garages",
+    title: "Garages",
+    lede: "Garage spaces from the office sheet. Storage rooms and sheds are listed separately.",
   },
   {
-    category: "reserved",
-    href: "/reserved",
-    label: "Reserved",
-    title: "Reserved",
-    lede: "Apartments held for an applicant. Dates, bedroom counts, and office notes come from the reservation log.",
+    category: "storage",
+    href: "/storages",
+    label: "Storages",
+    title: "Storages",
+    lede: "Storage rooms and sheds from the office sheet.",
   },
 ];
 
 const listingsByCategory: Record<Category, Listing[]> = {
   apartment: inventory.listings.apartments,
-  "garage-storage": inventory.listings.garagesStorage,
   commercial: inventory.listings.commercial,
-  pipeline: inventory.listings.pipeline,
-  reserved: inventory.listings.reserved,
+  garage: inventory.listings.garages,
+  storage: inventory.listings.storages,
 };
 
 export function listingsFor(category: Category): Listing[] {

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { CategoryView } from "@/components/CategoryView";
 
 export const metadata: Metadata = {
-  title: "Garages",
+  title: "Storages",
 };
 
-export default function GaragesPage() {
-  return <CategoryView category="garage" />;
+export default function StoragesPage() {
+  return <CategoryView category="storage" />;
 }

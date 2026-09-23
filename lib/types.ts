@@ -1,9 +1,4 @@
-export type Category =
-  | "apartment"
-  | "garage-storage"
-  | "commercial"
-  | "pipeline"
-  | "reserved";
+export type Category = "apartment" | "commercial" | "garage" | "storage";
 
 export type Tour = {
   url: string;
@@ -64,8 +59,9 @@ export type InventoryFile = {
   };
   listings: {
     apartments: Listing[];
-    garagesStorage: Listing[];
     commercial: Listing[];
+    garages: Listing[];
+    storages: Listing[];
     pipeline: Listing[];
     reserved: Listing[];
     residentialTracker: TrackerRow[];

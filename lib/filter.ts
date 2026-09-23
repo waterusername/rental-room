@@ -13,7 +13,6 @@ export function applyFilters(listings: Listing[], filters: Filters): Listing[] {
         listing.status,
         listing.officeNotes,
         listing.notes,
-        listing.prospect,
       ]
         .filter(Boolean)
         .join(" ")

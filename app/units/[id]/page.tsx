@@ -147,7 +147,6 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
           {listing.daysSinceReservation != null ? (
             <Fact label="Days since reservation" value={String(listing.daysSinceReservation)} />
           ) : null}
-          {listing.prospect ? <Fact label="Prospect" value={listing.prospect} /> : null}
         </dl>
       </section>
 
@@ -219,7 +218,6 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
           <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <Fact label="Tracker status" value={tracker.status ?? "Not listed"} />
             <Fact label="Reserved on tracker" value={tracker.reserved ? "Yes" : "No"} />
-            <Fact label="Prospect" value={tracker.prospect ?? "Not listed"} />
             <Fact label="Tracker unit type" value={tracker.unitType || "Not listed"} />
             {tracker.rent != null ? <Fact label="Tracker rent" value={formatMoney(tracker.rent)} /> : null}
           </dl>
