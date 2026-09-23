@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BrokerSecurityForms, EditBrokerForm } from "@/components/admin/BrokerForms";
 import { Chip } from "@/components/Chip";
+import { ShareHistoryTable } from "@/components/ShareHistoryTable";
 import { requireAdmin } from "@/lib/auth/guards";
 import { formatUtc, summarizeUserAgent } from "@/lib/auth/http";
 import { SHARE_RULES } from "@/lib/auth/share-risk";
@@ -80,6 +81,17 @@ export default async function BrokerDetailPage({ params }: { params: Promise<{ i
           stripeOn={paymentsEnforced() && user.role === "broker" && !officeAccount}
         />
       </div>
+
+      <section className="mt-10">
+        <h2 className="font-serif text-2xl font-semibold">Units shared</h2>
+        <p className="mt-2 max-w-3xl text-sm text-muted">
+          Every single-unit link this account created, including expired and revoked ones. This list is for
+          administrators. The record stores this email ({user.email}), the unit, and the link id. The secret URL is
+          not stored. Times are UTC. Revoke closes an active link immediately.
+        </p>
+        <ShareHistoryTable rows={detail.shares} empty="This account has not shared a unit." />
+        {detail.sharesTruncated ? <p className="mt-2 text-sm text-muted">Showing the latest 200 links.</p> : null}
+      </section>
 
       <section className="mt-10">
         <h2 className="font-serif text-2xl font-semibold">Sign-in history</h2>

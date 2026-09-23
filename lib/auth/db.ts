@@ -6,6 +6,15 @@ import {
   LAST_SEEN_WRITE_MS,
   SESSION_TTL_MS,
 } from "./config";
+import {
+  MAX_ACTIVE_UNIT_SHARES,
+  SHARE_TTL_MS,
+  ShareLimitError,
+  isShareToken,
+  shareCreatorStillAllows,
+  shareIsActive,
+  shareLifecycle,
+} from "./share-access";
 import type {
   AuthSession,
   BillingStatus,
@@ -13,6 +22,7 @@ import type {
   PublicUser,
   RequestMeta,
   Role,
+  UnitShareRecord,
   UserRecord,
 } from "./types";
 import { GRINBERG_ADMIN_EMAILS, isGrinbergAdminEmail } from "./staff";
@@ -66,6 +76,21 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_login_events_email_time ON login_events (email, occurred_at)`,
   `CREATE INDEX IF NOT EXISTS idx_login_events_ip_time ON login_events (ip, occurred_at)`,
   `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id)`,
+  `CREATE TABLE IF NOT EXISTS unit_shares (
+    id TEXT PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    unit_id TEXT NOT NULL,
+    unit_label TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_by_email TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    revoked_at TEXT,
+    view_count INTEGER NOT NULL DEFAULT 0,
+    last_viewed_at TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_unit_shares_unit ON unit_shares (unit_id, created_by)`,
+  `CREATE INDEX IF NOT EXISTS idx_unit_shares_creator ON unit_shares (created_by, created_at)`,
 ];
 
 let client: Client | null = null;
@@ -112,6 +137,23 @@ async function migrate(): Promise<void> {
     sql: "DELETE FROM sessions WHERE expires_at < ? AND (revoked_at IS NOT NULL OR expires_at < ?)",
     args: [cutoff, cutoff],
   });
+  await addColumn(db, "unit_shares", "unit_label", "TEXT");
+  await addColumn(db, "unit_shares", "last_viewed_at", "TEXT");
+  await db.execute(
+    "UPDATE unit_shares SET unit_label = unit_id WHERE unit_label IS NULL OR unit_label = ''",
+  );
+}
+
+async function addColumn(
+  db: Client,
+  table: "unit_shares",
+  column: "unit_label" | "last_viewed_at",
+  definition: string,
+): Promise<void> {
+  const info = await db.execute(`PRAGMA table_info(${table})`);
+  const exists = info.rows.some((row) => String(row.name) === column);
+  if (exists) return;
+  await db.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
 type UserRow = {
@@ -692,4 +734,195 @@ export async function listLoginHistory(userId: string, limit = 200): Promise<{ r
       fingerprint: row.fingerprint ? String(row.fingerprint) : null,
     })),
   };
+}
+
+const SHARE_COLUMNS = `id, unit_id, unit_label, created_by, created_by_email, created_at, expires_at, revoked_at, view_count, last_viewed_at`;
+
+type UnitShareRow = {
+  id: string;
+  unit_id: string;
+  unit_label: string | null;
+  created_by: string;
+  created_by_email: string;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  view_count: number | bigint;
+  last_viewed_at: string | null;
+};
+
+function mapShare(row: UnitShareRow, now: number): UnitShareRecord {
+  const unitId = row.unit_id;
+  const share = {
+    expiresAt: row.expires_at,
+    revokedAt: row.revoked_at,
+  };
+  return {
+    id: row.id,
+    unitId,
+    unitLabel: row.unit_label?.trim() || unitId,
+    createdBy: row.created_by,
+    createdByEmail: row.created_by_email,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    revokedAt: row.revoked_at,
+    viewCount: Number(row.view_count ?? 0),
+    lastViewedAt: row.last_viewed_at,
+    status: shareLifecycle(share, now),
+  };
+}
+
+export async function createUnitShare(input: {
+  unitId: string;
+  unitLabel?: string;
+  createdBy: string;
+  createdByEmail: string;
+  now?: number;
+}): Promise<{ token: string; share: UnitShareRecord }> {
+  await ensureSchema();
+  const now = input.now ?? Date.now();
+  const ttlMs = SHARE_TTL_MS;
+  const nowIso = new Date(now).toISOString();
+  const unitLabel = input.unitLabel?.trim() || input.unitId;
+  const existing = await getClient().execute({
+    sql: `SELECT COUNT(*) AS n FROM unit_shares
+      WHERE unit_id = ? AND created_by = ? AND revoked_at IS NULL AND expires_at > ?`,
+    args: [input.unitId, input.createdBy, nowIso],
+  });
+  if (Number(existing.rows[0]?.n ?? 0) >= MAX_ACTIVE_UNIT_SHARES) {
+    throw new ShareLimitError();
+  }
+  const token = randomBytes(32).toString("base64url");
+  const id = randomUUID();
+  const expires = new Date(now + ttlMs).toISOString();
+  await getClient().execute({
+    sql: `INSERT INTO unit_shares (
+      id, token_hash, unit_id, unit_label, created_by, created_by_email, created_at, expires_at, view_count
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+    args: [id, hashToken(token), input.unitId, unitLabel, input.createdBy, input.createdByEmail, nowIso, expires],
+  });
+  return {
+    token,
+    share: {
+      id,
+      unitId: input.unitId,
+      unitLabel,
+      createdBy: input.createdBy,
+      createdByEmail: input.createdByEmail,
+      createdAt: nowIso,
+      expiresAt: expires,
+      revokedAt: null,
+      viewCount: 0,
+      lastViewedAt: null,
+      status: shareLifecycle({ expiresAt: expires, revokedAt: null }, now),
+    },
+  };
+}
+
+export type ShareGate =
+  | { status: "open"; share: UnitShareRecord }
+  | { status: "expired" | "revoked" | "unavailable" };
+
+export async function readShareGate(token: string, now = Date.now()): Promise<ShareGate> {
+  if (!isShareToken(token) || !databaseConfig()) return { status: "unavailable" };
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: `SELECT ${SHARE_COLUMNS} FROM unit_shares WHERE token_hash = ?`,
+    args: [hashToken(token)],
+  });
+  const row = result.rows[0] as unknown as UnitShareRow | undefined;
+  if (!row) return { status: "unavailable" };
+  const share = mapShare(row, now);
+  if (share.revokedAt) return { status: "revoked" };
+  if (!shareIsActive(share, now)) return { status: "expired" };
+  const creator = await findUserById(share.createdBy);
+  if (!shareCreatorStillAllows(creator)) return { status: "unavailable" };
+  return { status: "open", share };
+}
+
+export async function readActiveShare(token: string, now = Date.now()): Promise<UnitShareRecord | null> {
+  const gate = await readShareGate(token, now);
+  return gate.status === "open" ? gate.share : null;
+}
+
+export async function listUnitShareHistory(input: {
+  unitId: string;
+  actorUserId: string;
+  actorIsAdmin: boolean;
+  limit?: number;
+}): Promise<UnitShareRecord[]> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: `SELECT ${SHARE_COLUMNS}
+      FROM unit_shares
+      WHERE unit_id = ? AND (? = 1 OR created_by = ?)
+      ORDER BY created_at DESC
+      LIMIT ?`,
+    args: [input.unitId, input.actorIsAdmin ? 1 : 0, input.actorUserId, input.limit ?? 50],
+  });
+  const now = Date.now();
+  return result.rows.map((row) => mapShare(row as unknown as UnitShareRow, now));
+}
+
+export async function listSharesByUser(userId: string, limit = 200): Promise<{ rows: UnitShareRecord[]; total: number }> {
+  await ensureSchema();
+  const db = getClient();
+  const count = await db.execute({
+    sql: "SELECT COUNT(*) AS n FROM unit_shares WHERE created_by = ?",
+    args: [userId],
+  });
+  const result = await db.execute({
+    sql: `SELECT ${SHARE_COLUMNS}
+      FROM unit_shares
+      WHERE created_by = ?
+      ORDER BY created_at DESC
+      LIMIT ?`,
+    args: [userId, limit],
+  });
+  return {
+    total: Number(count.rows[0]?.n ?? 0),
+    rows: result.rows.map((row) => mapShare(row as unknown as UnitShareRow, Date.now())),
+  };
+}
+
+export type ShareCount = { links: number; units: number };
+
+export async function shareCountsByUser(): Promise<Map<string, ShareCount>> {
+  await ensureSchema();
+  const result = await getClient().execute(
+    `SELECT created_by, COUNT(*) AS links, COUNT(DISTINCT unit_id) AS units
+     FROM unit_shares
+     GROUP BY created_by`,
+  );
+  const counts = new Map<string, ShareCount>();
+  for (const row of result.rows) {
+    counts.set(String(row.created_by), {
+      links: Number(row.links ?? 0),
+      units: Number(row.units ?? 0),
+    });
+  }
+  return counts;
+}
+
+export async function revokeUnitShare(input: {
+  id: string;
+  actorUserId: string;
+  actorIsAdmin: boolean;
+}): Promise<boolean> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: `UPDATE unit_shares SET revoked_at = ?
+      WHERE id = ? AND revoked_at IS NULL AND (? = 1 OR created_by = ?)`,
+    args: [new Date().toISOString(), input.id, input.actorIsAdmin ? 1 : 0, input.actorUserId],
+  });
+  return Number(result.rowsAffected ?? 0) > 0;
+}
+
+export async function recordShareView(id: string, now = Date.now()): Promise<void> {
+  await ensureSchema();
+  await getClient().execute({
+    sql: `UPDATE unit_shares SET view_count = view_count + 1, last_viewed_at = ?
+      WHERE id = ? AND revoked_at IS NULL AND expires_at > ?`,
+    args: [new Date(now).toISOString(), id, new Date(now).toISOString()],
+  });
 }

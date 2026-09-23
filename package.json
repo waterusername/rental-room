@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test lib/auth/*.test.ts",
+    "test": "node --experimental-strip-types --import ./scripts/register-ts-resolver.mjs --test lib/auth/*.test.ts",
     "streetview": "node scripts/fetch-street-views.mjs"
   },
   "dependencies": {

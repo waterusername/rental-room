@@ -22,6 +22,7 @@ export function AccountTable({ rows }: { rows: AccountStats[] }) {
             <th className="px-3 py-3 font-semibold">Last login</th>
             <th className="px-3 py-3 font-semibold">Last IP</th>
             <th className="px-3 py-3 font-semibold">IPs (30d)</th>
+            <th className="px-3 py-3 font-semibold">Units shared</th>
             <th className="px-3 py-3 font-semibold">Share risk</th>
           </tr>
         </thead>
@@ -44,6 +45,18 @@ export function AccountTable({ rows }: { rows: AccountStats[] }) {
               <td className="px-3 py-3 whitespace-nowrap">{formatUtc(row.lastLoginAt)}</td>
               <td className="px-3 py-3 font-mono text-xs">{row.lastIp ?? "—"}</td>
               <td className="px-3 py-3">{row.distinctIps30}</td>
+              <td className="px-3 py-3">
+                {row.sharedUnits === 0 ? (
+                  <span className="text-muted">None</span>
+                ) : (
+                  <>
+                    {row.sharedUnits}
+                    {row.shareLinks !== row.sharedUnits ? (
+                      <span className="text-muted"> · {row.shareLinks} links</span>
+                    ) : null}
+                  </>
+                )}
+              </td>
               <td className="px-3 py-3">
                 {row.flags.length > 0 ? (
                   <Chip tone="alert">Possible shared login</Chip>

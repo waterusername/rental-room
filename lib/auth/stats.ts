@@ -1,6 +1,15 @@
-import { loginAggregates, listLoginHistory, listUsers, recentSessions, recentSuccessfulLogins, toPublicUser } from "./db";
+import {
+  listLoginHistory,
+  listSharesByUser,
+  listUsers,
+  loginAggregates,
+  recentSessions,
+  recentSuccessfulLogins,
+  shareCountsByUser,
+  toPublicUser,
+} from "./db";
 import { evaluateShareRisk, type ShareFlag } from "./share-risk";
-import type { LoginHistoryRow, PublicUser } from "./types";
+import type { LoginHistoryRow, PublicUser, UnitShareRecord } from "./types";
 import { paymentsEnforced } from "./config";
 
 export type AccountStats = {
@@ -12,6 +21,8 @@ export type AccountStats = {
   distinctIps30: number;
   failedLogins7: number;
   flags: ShareFlag[];
+  shareLinks: number;
+  sharedUnits: number;
 };
 
 export type DashboardData = {
@@ -23,6 +34,8 @@ export type DashboardData = {
 export type BrokerDetail = AccountStats & {
   history: LoginHistoryRow[];
   historyTruncated: boolean;
+  shares: UnitShareRecord[];
+  sharesTruncated: boolean;
 };
 
 const HISTORY_LIMIT = 200;
@@ -38,11 +51,16 @@ export async function loadBrokerDetail(id: string): Promise<BrokerDetail | null>
   const stats = await buildStats();
   const account = stats.find((item) => item.user.id === id);
   if (!account) return null;
-  const history = await listLoginHistory(id, HISTORY_LIMIT);
+  const [history, shares] = await Promise.all([
+    listLoginHistory(id, HISTORY_LIMIT),
+    listSharesByUser(id, HISTORY_LIMIT),
+  ]);
   return {
     ...account,
     history: history.rows,
     historyTruncated: history.total > history.rows.length,
+    shares: shares.rows,
+    sharesTruncated: shares.total > shares.rows.length,
   };
 }
 
@@ -50,11 +68,12 @@ async function buildStats(): Promise<AccountStats[]> {
   const now = Date.now();
   const since7 = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
   const since30 = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const [users, aggregates, logins, sessions] = await Promise.all([
+  const [users, aggregates, logins, sessions, shareCounts] = await Promise.all([
     listUsers(),
     loginAggregates(since7, since30),
     recentSuccessfulLogins(since30),
     recentSessions(since30),
+    shareCountsByUser(),
   ]);
 
   const loginsByUser = groupBy(logins, (login) => login.userId);
@@ -92,6 +111,8 @@ async function buildStats(): Promise<AccountStats[]> {
       distinctIps30: aggregate?.distinctIps30 ?? 0,
       failedLogins7: aggregate?.failedLogins7 ?? 0,
       flags,
+      shareLinks: shareCounts.get(user.id)?.links ?? 0,
+      sharedUnits: shareCounts.get(user.id)?.units ?? 0,
     };
   });
 }
