@@ -37,7 +37,7 @@ export default async function BillingPage({
           ? " Administrator access does not depend on a subscription."
           : canBrowse
             ? " You can open the vacancy boards."
-            : " The vacancy boards stay closed until this account is complimentary or the subscription is paid."}
+            : " The vacancy boards stay closed until this account is complimentary or the $100 USD monthly subscription is paid."}
       </p>
       {params.checkout === "success" ? (
         <p className="mt-4 rounded-md border border-accent-border bg-accent-soft px-3 py-2 text-sm text-accent">

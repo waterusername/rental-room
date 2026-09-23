@@ -1,5 +1,27 @@
 import type { BillingStatus, Role } from "./types";
 
+/**
+ * Grinberg office accounts. These people are administrators and are never billed.
+ * Dimitry uses brokeropenhouse@gmail.com.
+ * Outside brokers are everyone else. Their subscription is the Stripe Price in
+ * STRIPE_PRICE_ID, which must be $100 USD billed monthly. The app does not send an amount.
+ */
+export const GRINBERG_ADMIN_EMAILS = [
+  "daniel@grinbergmanagement.com",
+  "brokeropenhouse@gmail.com",
+  "jennylanica@grinbergmanagement.com",
+  "fatima@grinbergmanagement.com",
+  "liliana.torija@grinbergmanagement.com",
+  "jerika.justo@grinbergmanagement.com",
+] as const;
+
+const OFFICE = new Set<string>(GRINBERG_ADMIN_EMAILS);
+
+export function isGrinbergAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return OFFICE.has(email.trim().toLowerCase());
+}
+
 export const SESSION_COOKIE = "rr_session";
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
 export const LAST_SEEN_WRITE_MS = 1000 * 60 * 5;
@@ -38,15 +60,19 @@ export function mapStripeSubscriptionStatus(status: string): BillingStatus {
 }
 
 export function canBrowseListings(
-  user: { role: Role; billingStatus: BillingStatus },
+  user: { role: Role; billingStatus: BillingStatus; email?: string | null },
   stripeOn: boolean,
 ): boolean {
-  if (user.role === "admin") return true;
+  if (user.role === "admin" || isGrinbergAdminEmail(user.email)) return true;
   if (!stripeOn) return true;
   return user.billingStatus === "complimentary" || user.billingStatus === "active_paid";
 }
 
-export function viewerCanBrowse(user: { role: Role; billingStatus: BillingStatus }): boolean {
+export function viewerCanBrowse(user: {
+  role: Role;
+  billingStatus: BillingStatus;
+  email?: string | null;
+}): boolean {
   return canBrowseListings(user, paymentsEnforced());
 }
 
@@ -69,6 +95,7 @@ export function postLoginPath(input: {
   mustResetPassword: boolean;
   role: Role;
   billingStatus: BillingStatus;
+  email?: string | null;
   nextPath: string;
   stripeOn: boolean;
 }): string {

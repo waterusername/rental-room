@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canBrowseListings, mapStripeSubscriptionStatus } from "./config.ts";
+import { canBrowseListings, isGrinbergAdminEmail, mapStripeSubscriptionStatus } from "./config.ts";
 import { clientIp, safeNextPath, summarizeUserAgent } from "./http.ts";
 import { evaluateShareRisk, median, networkPrefix, type LoginPoint, type SessionPoint } from "./share-risk.ts";
 
@@ -57,6 +57,23 @@ test("billing gate lets complimentary and paid brokers through only when Stripe 
   assert.equal(canBrowseListings({ role: "broker", billingStatus: "active_paid" }, true), true);
   assert.equal(canBrowseListings({ role: "broker", billingStatus: "payment_required" }, false), true);
   assert.equal(canBrowseListings({ role: "admin", billingStatus: "canceled" }, true), true);
+});
+
+test("grinberg office emails browse without a subscription", () => {
+  assert.equal(isGrinbergAdminEmail("Daniel@GrinbergManagement.com"), true);
+  assert.equal(isGrinbergAdminEmail("brokeropenhouse@gmail.com"), true);
+  assert.equal(isGrinbergAdminEmail("jennylanica@grinbergmanagement.com"), true);
+  assert.equal(isGrinbergAdminEmail("fatima@grinbergmanagement.com"), true);
+  assert.equal(isGrinbergAdminEmail("liliana.torija@grinbergmanagement.com"), true);
+  assert.equal(isGrinbergAdminEmail("jerika.justo@grinbergmanagement.com"), true);
+  assert.equal(isGrinbergAdminEmail("broker@example.com"), false);
+  assert.equal(
+    canBrowseListings(
+      { role: "broker", billingStatus: "payment_required", email: "daniel@grinbergmanagement.com" },
+      true,
+    ),
+    true,
+  );
 });
 
 test("stripe statuses map onto billing states", () => {

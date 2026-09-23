@@ -13,12 +13,16 @@ export function CheckoutButton() {
           {state.error}
         </p>
       ) : null}
+      <p className="text-sm leading-6 text-muted">
+        Outside-broker access is $100 USD per month. Checkout charges the Stripe Price configured for this site. That
+        Price must be $100 USD, billed monthly. This page does not set the amount.
+      </p>
       <button
         type="submit"
         disabled={pending}
         className="inline-flex min-h-11 items-center justify-center rounded-full bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
       >
-        {pending ? "Opening Stripe…" : "Subscribe with Stripe"}
+        {pending ? "Opening Stripe…" : "Subscribe at $100 per month"}
       </button>
     </form>
   );

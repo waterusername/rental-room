@@ -29,7 +29,7 @@ export default async function AccountPage() {
           ? "Administrators can always open the vacancy boards."
           : canBrowse
             ? "This account can open the vacancy boards."
-            : "The vacancy boards stay closed until billing is complimentary or paid."}
+            : "The vacancy boards stay closed until billing is complimentary or the $100 USD monthly subscription is paid."}
         {stripeOn ? "" : " Payment collection is off on this server, so an active account is not blocked for billing."}
       </p>
       <div className="mt-6 flex flex-wrap gap-4 text-sm font-semibold">

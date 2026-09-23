@@ -33,11 +33,15 @@ export default async function AdminHomePage() {
       </p>
       {dashboard.stripeOn ? (
         <p className="mt-4 max-w-3xl rounded-md border border-accent-border bg-accent-soft px-3 py-2 text-sm text-accent">
-          Stripe is configured. Brokers can open the boards only when billing is Complimentary or Paid.
+          Stripe is configured. Outside brokers pay $100 USD per month through the Price in STRIPE_PRICE_ID (that Price
+          must be $100 USD, billed monthly). They can open the boards when billing is Complimentary or Paid. New brokers
+          start as Payment required. Grinberg office accounts stay complimentary.
         </p>
       ) : (
         <p className="mt-4 max-w-3xl rounded-md border border-tan-border bg-tan-soft px-3 py-2 text-sm text-tan">
-          Stripe is not configured. Billing status is saved, but it does not block an active account.
+          Stripe is not configured. Billing status is saved, but it does not block an active account. When you add keys,
+          set STRIPE_PRICE_ID to a $100 USD monthly Price. New outside brokers already default to Payment required.
+          Grinberg office accounts stay complimentary.
         </p>
       )}
 

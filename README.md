@@ -44,12 +44,12 @@ Production needs a hosted database. The serverless filesystem is not a durable p
 | `NEXT_PUBLIC_APP_URL` | Public origin, e.g. `https://rental-room-tau.vercel.app`, no trailing slash. |
 | `STRIPE_SECRET_KEY` | Optional. See Stripe below. |
 | `STRIPE_WEBHOOK_SECRET` | Optional. |
-| `STRIPE_PRICE_ID` | Optional. Recurring Price ID from the Stripe Dashboard (`price_...`). |
+| `STRIPE_PRICE_ID` | Optional. Recurring Price ID (`price_...`). The Stripe Price must be **$100 USD per month**. The app sends this ID and does not set the amount. |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optional. Hosted Checkout does not require it; keep it for a future Stripe.js form. |
 
 4. Redeploy.
 5. Open the site and sign in as the administrator.
-6. Open **Access desk** (`/admin`) and create a broker. Copy the temporary password and send it to them. They must choose a new password before the boards open.
+6. Open **Access desk** (`/admin`) and create a broker. New outside brokers start as **Payment required**. Copy the temporary password and send it to them. They must choose a new password before the boards open. To mark an existing broker as payment required, open their account, set **Billing status** to **Payment required**, and choose **Save profile**.
 7. To turn someone off, open their account and choose **Disable account** (blocks sign-in and ends sessions) or **Force logout** (ends sessions, account stays active). **Reset password** issues a new temporary password and ends sessions.
 
 Until `TURSO_DATABASE_URL` (or `DATABASE_URL`) is set, production shows the login page and does not serve listings.
@@ -72,23 +72,34 @@ Administrators are scored with the absolute floors (4 and 8), not against broker
 
 ### Stripe
 
-Charging is optional. If `STRIPE_SECRET_KEY` or `STRIPE_PRICE_ID` is missing, billing status is stored but ignored and every active account can browse. Administrators can always browse.
+Outside brokers pay **$100 USD per month** for Rental Room access. Checkout sends `line_items: [{ price: STRIPE_PRICE_ID }]`. It does not send a dollar amount. In the Stripe Dashboard, that Price must be **$100 USD, billed monthly**. Hosted Checkout tells the broker the same figure. There is no separate Stripe Customer Portal in this app.
 
-When both are set, a broker can open listings only when their status is `complimentary` or `active_paid`. The other statuses are `payment_required`, `past_due`, and `canceled`.
+Grinberg office accounts stay complimentary and are never billed. Creating or saving one of these emails stores an administrator with billing **Complimentary**. A webhook cannot change that status. They are not created automatically (no passwords are stored for them):
 
-The app does not choose the fee. Create the price in Stripe:
+- daniel@grinbergmanagement.com
+- brokeropenhouse@gmail.com (Dimitry)
+- jennylanica@grinbergmanagement.com
+- fatima@grinbergmanagement.com
+- liliana.torija@grinbergmanagement.com
+- jerika.justo@grinbergmanagement.com
 
-1. Stripe Dashboard → Product catalog → add a product for broker access.
-2. Add a recurring monthly price for the amount you want to charge. Copy the Price ID (`price_...`) into `STRIPE_PRICE_ID`.
+Charging is optional until the keys exist. If `STRIPE_SECRET_KEY` or `STRIPE_PRICE_ID` is missing, billing status is stored but ignored and every active account can browse. Administrators can always browse.
+
+When both are set, an outside broker can open listings only when their status is `complimentary` or `active_paid`. The other statuses are `payment_required`, `past_due`, and `canceled`. New outside brokers created on the access desk default to `payment_required`. An administrator can still choose Complimentary for a specific outside broker.
+
+Create the $100 price in Stripe:
+
+1. Stripe Dashboard → Product catalog → add a product for outside-broker access.
+2. Add a recurring price of **$100 USD per month**. Copy the Price ID (`price_...`) into `STRIPE_PRICE_ID`.
 3. Developers → API keys → copy the secret key into `STRIPE_SECRET_KEY` and the publishable key into `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
 4. Developers → Webhooks → add an endpoint:
    `https://rental-room-tau.vercel.app/api/stripe/webhook`
    Events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`.
 5. Copy the signing secret into `STRIPE_WEBHOOK_SECRET`.
 6. Set `NEXT_PUBLIC_APP_URL` and redeploy.
-7. On the broker’s admin page, set billing to **Payment required** and choose **Generate Stripe checkout link**. Send that link. After payment, the webhook sets **Paid** and the boards open. Complimentary brokers skip this.
+7. On an outside broker’s admin page, set billing to **Payment required** (already the default for new brokers) and choose **Generate Stripe checkout link**. Send that link. After payment, the webhook sets **Paid** and the boards open.
 
-Use Stripe test keys until a real charge should go through. The price amount lives only in Stripe.
+Use Stripe test keys until a real charge should go through. These variables still need real values before anyone is charged: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID` (the $100 USD monthly Price), `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_APP_URL`.
 
 ## Refresh the listings
 

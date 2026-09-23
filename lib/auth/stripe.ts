@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { mapStripeSubscriptionStatus } from "./config";
 import { applyStripeBilling, findUserById } from "./db";
+import { CHECKOUT_SUBMIT_MESSAGE, isGrinbergAdminEmail } from "./staff";
 import type { BillingStatus, PublicUser } from "./types";
 
 let stripeClient: Stripe | null = null;
@@ -29,6 +30,9 @@ export async function createCheckoutUrl(user: Pick<PublicUser, "id" | "email" | 
   if (!stripe || !price) {
     throw new Error("Stripe is not configured. Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID.");
   }
+  if (isGrinbergAdminEmail(user.email)) {
+    throw new Error("Grinberg office accounts are complimentary and are not billed.");
+  }
   const base = await appBaseUrl();
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
@@ -37,7 +41,11 @@ export async function createCheckoutUrl(user: Pick<PublicUser, "id" | "email" | 
     cancel_url: `${base}/account/billing?checkout=cancel`,
     client_reference_id: user.id,
     metadata: { userId: user.id },
-    subscription_data: { metadata: { userId: user.id } },
+    custom_text: { submit: { message: CHECKOUT_SUBMIT_MESSAGE } },
+    subscription_data: {
+      metadata: { userId: user.id },
+      description: "Rental Room outside-broker access, $100 USD per month.",
+    },
     allow_promotion_codes: true,
     ...(user.stripeCustomerId ? { customer: user.stripeCustomerId } : { customer_email: user.email }),
   });
@@ -106,6 +114,8 @@ function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
 
 export async function checkoutForUserId(userId: string): Promise<string> {
   const user = await findUserById(userId);
-  if (!user || user.role !== "broker") throw new Error("Checkout is only available for a broker account.");
+  if (!user || user.role !== "broker" || isGrinbergAdminEmail(user.email)) {
+    throw new Error("Checkout is only for outside brokers. Grinberg office accounts are complimentary.");
+  }
   return createCheckoutUrl(user);
 }

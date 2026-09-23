@@ -15,6 +15,7 @@ import type {
   Role,
   UserRecord,
 } from "./types";
+import { GRINBERG_ADMIN_EMAILS, isGrinbergAdminEmail } from "./staff";
 import { BILLING_STATUSES, ROLES } from "./types";
 
 const SCHEMA = [
@@ -256,13 +257,37 @@ export async function updateBrokerProfile(input: {
   name: string | null;
   company: string | null;
   billingStatus: BillingStatus;
+  role?: Role;
 }): Promise<void> {
   await ensureSchema();
+  const now = new Date().toISOString();
+  if (input.role) {
+    await getClient().execute({
+      sql: `UPDATE users
+        SET email = ?, name = ?, company = ?, billing_status = ?, role = ?, updated_at = ?
+        WHERE id = ?`,
+      args: [input.email, input.name, input.company, input.billingStatus, input.role, now, input.id],
+    });
+    return;
+  }
   await getClient().execute({
     sql: `UPDATE users
       SET email = ?, name = ?, company = ?, billing_status = ?, updated_at = ?
       WHERE id = ?`,
-    args: [input.email, input.name, input.company, input.billingStatus, new Date().toISOString(), input.id],
+    args: [input.email, input.name, input.company, input.billingStatus, now, input.id],
+  });
+}
+
+/** Existing rows for the office list become complimentary administrators. Does not create accounts. */
+export async function markGrinbergOfficeAccounts(): Promise<void> {
+  await ensureSchema();
+  const placeholders = GRINBERG_ADMIN_EMAILS.map(() => "?").join(", ");
+  await getClient().execute({
+    sql: `UPDATE users
+      SET role = 'admin', billing_status = 'complimentary', updated_at = ?
+      WHERE email IN (${placeholders})
+        AND (role <> 'admin' OR billing_status <> 'complimentary')`,
+    args: [new Date().toISOString(), ...GRINBERG_ADMIN_EMAILS],
   });
 }
 
@@ -294,6 +319,7 @@ export async function applyStripeBilling(input: {
     (input.subscriptionId ? await findUserByStripe("stripe_subscription_id", input.subscriptionId) : null) ??
     (input.customerId ? await findUserByStripe("stripe_customer_id", input.customerId) : null);
   if (!user) return false;
+  const billingStatus = isGrinbergAdminEmail(user.email) ? "complimentary" : input.billingStatus;
   await getClient().execute({
     sql: `UPDATE users
       SET billing_status = ?,
@@ -302,7 +328,7 @@ export async function applyStripeBilling(input: {
           updated_at = ?
       WHERE id = ?`,
     args: [
-      input.billingStatus,
+      billingStatus,
       input.customerId ?? null,
       input.subscriptionId ?? null,
       new Date().toISOString(),

@@ -70,7 +70,7 @@ export function CreateBrokerForm() {
       </label>
       <label className="block text-sm font-semibold">
         Billing
-        <select name="billingStatus" defaultValue="complimentary" className={inputClass}>
+        <select name="billingStatus" defaultValue="payment_required" className={inputClass}>
           {BILLING_STATUSES.map((status) => (
             <option key={status} value={status}>
               {BILLING_LABEL[status]}
@@ -78,6 +78,11 @@ export function CreateBrokerForm() {
           ))}
         </select>
       </label>
+      <p className="text-sm leading-6 text-muted">
+        Outside brokers start as Payment required. Access is $100 USD per month once Stripe is configured. The Stripe
+        Price (STRIPE_PRICE_ID) must be $100 USD billed monthly; this form does not set the dollar amount. A Grinberg
+        office email is saved as a complimentary administrator and is not billed.
+      </p>
       <button type="submit" disabled={pending} className={primaryClass}>
         {pending ? "Creating…" : "Create broker"}
       </button>
@@ -91,12 +96,14 @@ export function EditBrokerForm({
   name,
   company,
   billingStatus,
+  officeAccount = false,
 }: {
   userId: string;
   email: string;
   name: string | null;
   company: string | null;
   billingStatus: BillingStatus;
+  officeAccount?: boolean;
 }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(updateBrokerAction, null);
   return (
@@ -118,7 +125,15 @@ export function EditBrokerForm({
       </label>
       <label className="block text-sm font-semibold">
         Billing status
-        <select name="billingStatus" defaultValue={billingStatus} className={inputClass}>
+        {officeAccount ? (
+          <input type="hidden" name="billingStatus" value="complimentary" />
+        ) : null}
+        <select
+          name={officeAccount ? undefined : "billingStatus"}
+          defaultValue={officeAccount ? "complimentary" : billingStatus}
+          disabled={officeAccount}
+          className={inputClass}
+        >
           {BILLING_STATUSES.map((status) => (
             <option key={status} value={status}>
               {BILLING_LABEL[status]}
@@ -127,7 +142,9 @@ export function EditBrokerForm({
         </select>
       </label>
       <p className="text-sm leading-6 text-muted">
-        Set Payment required to keep this broker off the boards until Stripe marks the subscription paid. Complimentary and Paid can browse when Stripe is configured. Administrators can always browse.
+        {officeAccount
+          ? "This Grinberg office account stays complimentary and is not billed. Its email cannot be changed here."
+          : "Set Payment required to keep this broker off the boards until Stripe marks the subscription paid. Complimentary and Paid can browse when Stripe is configured. Outside-broker access is $100 USD per month: STRIPE_PRICE_ID must be that monthly Price. Administrators can always browse."}
       </p>
       <button type="submit" disabled={pending} className={primaryClass}>
         {pending ? "Saving…" : "Save profile"}
@@ -191,9 +208,16 @@ export function BrokerSecurityForms({
           className={quietClass}
         />
       ) : null}
+      {stripeOn && !self ? (
+        <p className="text-sm leading-6 text-muted">
+          The checkout link charges the Stripe Price in STRIPE_PRICE_ID. That Price must be $100 USD, billed monthly.
+          This desk does not set the dollar amount. Grinberg office accounts are not billed.
+        </p>
+      ) : null}
       {!stripeOn ? (
         <p className="text-sm leading-6 text-muted">
-          Stripe is not configured, so billing status is stored but does not block the boards. Add the Stripe environment variables when you are ready to charge for access.
+          Stripe is not configured, so billing status is stored but does not block the boards. When you add keys, set
+          STRIPE_PRICE_ID to a $100 USD monthly Price.
         </p>
       ) : null}
     </div>

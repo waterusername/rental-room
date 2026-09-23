@@ -13,8 +13,9 @@ import {
 import { requireAdmin } from "./guards";
 import { normalizeEmail, passwordError } from "./http";
 import { generateTemporaryPassword, hashPassword } from "./password";
+import { isGrinbergAdminEmail } from "./staff";
 import { checkoutForUserId } from "./stripe";
-import { BILLING_STATUSES, type ActionState, type BillingStatus } from "./types";
+import { BILLING_STATUSES, type ActionState, type BillingStatus, type Role } from "./types";
 
 function refresh(userId?: string) {
   revalidatePath("/admin");
@@ -36,8 +37,8 @@ export async function createBrokerAction(_prev: ActionState, formData: FormData)
   if (!email) return { error: "Enter a valid email address." };
   const name = blankToNull(String(formData.get("name") ?? ""));
   const company = blankToNull(String(formData.get("company") ?? ""));
-  const billingStatus = parseBilling(String(formData.get("billingStatus") ?? "complimentary"));
-  if (!billingStatus) return { error: "Choose a billing status." };
+  const requested = parseBilling(String(formData.get("billingStatus") ?? "payment_required"));
+  if (!requested) return { error: "Choose a billing status." };
   const typed = String(formData.get("password") ?? "");
   const temporary = typed.trim() ? typed : generateTemporaryPassword();
   const issue = passwordError(temporary);
@@ -45,12 +46,15 @@ export async function createBrokerAction(_prev: ActionState, formData: FormData)
   const existing = await findUserByEmail(email);
   if (existing) return { error: "An account with that email already exists." };
 
+  const office = isGrinbergAdminEmail(email);
+  const billingStatus: BillingStatus = office ? "complimentary" : requested;
+  const role: Role = office ? "admin" : "broker";
   const created = await insertUser({
     email,
     name: name?.slice(0, 120) ?? null,
     company,
     passwordHash: await hashPassword(temporary),
-    role: "broker",
+    role,
     active: true,
     mustResetPassword: true,
     billingStatus,
@@ -58,7 +62,9 @@ export async function createBrokerAction(_prev: ActionState, formData: FormData)
   });
   refresh(created.id);
   return {
-    ok: `Broker account created for ${created.email}. Share the temporary password once. It cannot be shown again.`,
+    ok: office
+      ? `Office account created for ${created.email}. Grinberg office accounts are complimentary and are not billed. Share the temporary password once. It cannot be shown again.`
+      : `Broker account created for ${created.email}. Share the temporary password once. It cannot be shown again.`,
     tempPassword: temporary,
   };
 }
@@ -70,19 +76,26 @@ export async function updateBrokerAction(_prev: ActionState, formData: FormData)
   if (!user) return { error: "That account was not found." };
   const email = normalizeEmail(String(formData.get("email") ?? ""));
   if (!email) return { error: "Enter a valid email address." };
-  const billingStatus = parseBilling(String(formData.get("billingStatus") ?? ""));
-  if (!billingStatus) return { error: "Choose a billing status." };
+  const requested = parseBilling(String(formData.get("billingStatus") ?? ""));
+  if (!requested) return { error: "Choose a billing status." };
+  if (isGrinbergAdminEmail(user.email) && email !== user.email) {
+    return { error: "A Grinberg office account keeps its email and is not billed." };
+  }
   const other = await findUserByEmail(email);
   if (other && other.id !== user.id) return { error: "An account with that email already exists." };
+  const office = isGrinbergAdminEmail(email);
   await updateBrokerProfile({
     id: user.id,
     email,
     name: blankToNull(String(formData.get("name") ?? ""))?.slice(0, 120) ?? null,
     company: blankToNull(String(formData.get("company") ?? "")),
-    billingStatus,
+    billingStatus: office ? "complimentary" : requested,
+    ...(office ? { role: "admin" as const } : {}),
   });
   refresh(user.id);
-  return { ok: "Account saved." };
+  return {
+    ok: office ? "Office account saved. It stays complimentary and is not billed." : "Account saved.",
+  };
 }
 
 export async function setBrokerActiveAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -129,7 +142,9 @@ export async function createCheckoutLinkAction(_prev: ActionState, formData: For
   await requireAdmin();
   const id = String(formData.get("userId") ?? "");
   const user = await findUserById(id);
-  if (!user || user.role !== "broker") return { error: "Checkout links are for broker accounts." };
+  if (!user || user.role !== "broker" || isGrinbergAdminEmail(user.email)) {
+    return { error: "Checkout links are for outside brokers. Grinberg office accounts are complimentary." };
+  }
   try {
     const checkoutUrl = await checkoutForUserId(user.id);
     return {

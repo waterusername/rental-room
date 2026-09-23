@@ -8,6 +8,7 @@ import { formatUtc, summarizeUserAgent } from "@/lib/auth/http";
 import { SHARE_RULES } from "@/lib/auth/share-risk";
 import { loadBrokerDetail } from "@/lib/auth/stats";
 import { paymentsEnforced } from "@/lib/auth/config";
+import { isGrinbergAdminEmail } from "@/lib/auth/staff";
 import { BILLING_LABEL } from "@/lib/auth/types";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default async function BrokerDetailPage({ params }: { params: Promise<{ i
   const [admin, detail] = await Promise.all([requireAdmin(), loadBrokerDetail(id)]);
   if (!detail) notFound();
   const { user } = detail;
+  const officeAccount = isGrinbergAdminEmail(user.email);
 
   return (
     <>
@@ -69,12 +71,13 @@ export default async function BrokerDetailPage({ params }: { params: Promise<{ i
           name={user.name}
           company={user.company}
           billingStatus={user.billingStatus}
+          officeAccount={officeAccount}
         />
         <BrokerSecurityForms
           userId={user.id}
           active={user.active}
           self={user.id === admin.userId}
-          stripeOn={paymentsEnforced() && user.role === "broker"}
+          stripeOn={paymentsEnforced() && user.role === "broker" && !officeAccount}
         />
       </div>
 

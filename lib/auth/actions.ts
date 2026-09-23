@@ -26,6 +26,7 @@ import { requireUser } from "./guards";
 import { normalizeEmail, passwordError, requestMeta, safeNextPath } from "./http";
 import { hashPassword, verifyPassword } from "./password";
 import { ensureAdminSeed } from "./seed";
+import { isGrinbergAdminEmail } from "./staff";
 import { createCheckoutUrl } from "./stripe";
 import type { ActionState, LoginState } from "./types";
 
@@ -85,6 +86,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       mustResetPassword: user.mustResetPassword,
       role: user.role,
       billingStatus: user.billingStatus,
+      email: user.email,
       nextPath,
       stripeOn: paymentsEnforced(),
     }),
@@ -128,6 +130,7 @@ export async function changePasswordAction(_prev: ActionState, formData: FormDat
       mustResetPassword: false,
       role: user.role,
       billingStatus: user.billingStatus,
+      email: user.email,
       nextPath,
       stripeOn: paymentsEnforced(),
     }),
@@ -139,6 +142,9 @@ export async function startMyCheckout(prev: ActionState, formData: FormData): Pr
   void formData;
   const session = await requireUser();
   if (session.mustResetPassword) redirect("/account/password");
+  if (isGrinbergAdminEmail(session.email)) {
+    return { error: "Grinberg office accounts are complimentary and are not billed." };
+  }
   if (session.role === "admin") redirect("/admin");
   const user = await findUserById(session.userId);
   if (!user || !user.active) return { error: "This account cannot start checkout." };
