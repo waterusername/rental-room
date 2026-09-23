@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { ListingCard } from "./ListingCard";
 import { applyFilters, statusOptions, zipOptions } from "@/lib/filter";
+import type { ExteriorPhoto } from "@/lib/street-view";
 import {
   UNIT_GROUP_LABEL,
   bathroomOptionLabel,
@@ -23,7 +24,7 @@ export function Browser({
   variant,
 }: {
   listings: Listing[];
-  photos: Record<string, { src: string; kind: "streetview" | "map"; alt: string; credit: string } | null>;
+  photos: Record<string, ExteriorPhoto | null>;
   variant: "apartment" | "inventory";
 }) {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);

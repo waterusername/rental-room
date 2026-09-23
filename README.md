@@ -128,6 +128,8 @@ The script skips files that are already downloaded. Pass `--force` to replace th
 
 `data/street-view-manifest.json` maps each normalized address to `/street-view/<slug>.jpg`.
 
+A single unit can use its own photo instead. `data/listing-exteriors.json` maps that listing id to an image in `public/exteriors/`. The card and the detail page use that file and do not fall back to Street View. Other units at the same address still use the shared photo. `npm run streetview` does not replace these files.
+
 Every unit detail page shows each Matterport link stored on that apartment. A floor plan is shown when `public/layouts/` has a PNG whose model id matches the tour URL (`m=`). Units with a tour but no layout file still show the tour and omit the floor plan.
 
 ## What is not in v1
