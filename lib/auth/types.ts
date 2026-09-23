@@ -66,7 +66,19 @@ export type ActionState = {
   ok?: string;
   tempPassword?: string;
   checkoutUrl?: string;
+  shareUrl?: string;
 } | null;
+
+export type UnitShareRecord = {
+  id: string;
+  unitId: string;
+  createdBy: string;
+  createdByEmail: string;
+  createdAt: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  viewCount: number;
+};
 
 export type LoginHistoryRow = {
   id: string;

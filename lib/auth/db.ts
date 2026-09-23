@@ -6,6 +6,14 @@ import {
   LAST_SEEN_WRITE_MS,
   SESSION_TTL_MS,
 } from "./config";
+import {
+  MAX_ACTIVE_UNIT_SHARES,
+  SHARE_TTL_MS,
+  ShareLimitError,
+  isShareToken,
+  shareCreatorStillAllows,
+  shareIsActive,
+} from "./share-access";
 import type {
   AuthSession,
   BillingStatus,
@@ -13,6 +21,7 @@ import type {
   PublicUser,
   RequestMeta,
   Role,
+  UnitShareRecord,
   UserRecord,
 } from "./types";
 import { GRINBERG_ADMIN_EMAILS, isGrinbergAdminEmail } from "./staff";
@@ -66,6 +75,18 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_login_events_email_time ON login_events (email, occurred_at)`,
   `CREATE INDEX IF NOT EXISTS idx_login_events_ip_time ON login_events (ip, occurred_at)`,
   `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id)`,
+  `CREATE TABLE IF NOT EXISTS unit_shares (
+    id TEXT PRIMARY KEY,
+    token_hash TEXT NOT NULL UNIQUE,
+    unit_id TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    created_by_email TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    revoked_at TEXT,
+    view_count INTEGER NOT NULL DEFAULT 0
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_unit_shares_unit ON unit_shares (unit_id, created_by)`,
 ];
 
 let client: Client | null = null;
@@ -110,6 +131,10 @@ async function migrate(): Promise<void> {
   const cutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
   await db.execute({
     sql: "DELETE FROM sessions WHERE expires_at < ? AND (revoked_at IS NOT NULL OR expires_at < ?)",
+    args: [cutoff, cutoff],
+  });
+  await db.execute({
+    sql: "DELETE FROM unit_shares WHERE expires_at < ? OR (revoked_at IS NOT NULL AND revoked_at < ?)",
     args: [cutoff, cutoff],
   });
 }
@@ -692,4 +717,130 @@ export async function listLoginHistory(userId: string, limit = 200): Promise<{ r
       fingerprint: row.fingerprint ? String(row.fingerprint) : null,
     })),
   };
+}
+
+type UnitShareRow = {
+  id: string;
+  unit_id: string;
+  created_by: string;
+  created_by_email: string;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  view_count: number | bigint;
+};
+
+function mapShare(row: UnitShareRow): UnitShareRecord {
+  return {
+    id: row.id,
+    unitId: row.unit_id,
+    createdBy: row.created_by,
+    createdByEmail: row.created_by_email,
+    createdAt: row.created_at,
+    expiresAt: row.expires_at,
+    revokedAt: row.revoked_at,
+    viewCount: Number(row.view_count ?? 0),
+  };
+}
+
+export async function createUnitShare(input: {
+  unitId: string;
+  createdBy: string;
+  createdByEmail: string;
+  ttlMs?: number;
+  now?: number;
+}): Promise<{ token: string; share: UnitShareRecord }> {
+  await ensureSchema();
+  const now = input.now ?? Date.now();
+  const ttlMs = input.ttlMs ?? SHARE_TTL_MS;
+  const nowIso = new Date(now).toISOString();
+  const existing = await getClient().execute({
+    sql: `SELECT COUNT(*) AS n FROM unit_shares
+      WHERE unit_id = ? AND created_by = ? AND revoked_at IS NULL AND expires_at > ?`,
+    args: [input.unitId, input.createdBy, nowIso],
+  });
+  if (Number(existing.rows[0]?.n ?? 0) >= MAX_ACTIVE_UNIT_SHARES) {
+    throw new ShareLimitError();
+  }
+  const token = randomBytes(32).toString("base64url");
+  const id = randomUUID();
+  const expires = new Date(now + ttlMs).toISOString();
+  await getClient().execute({
+    sql: `INSERT INTO unit_shares (
+      id, token_hash, unit_id, created_by, created_by_email, created_at, expires_at, view_count
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 0)`,
+    args: [id, hashToken(token), input.unitId, input.createdBy, input.createdByEmail, nowIso, expires],
+  });
+  return {
+    token,
+    share: {
+      id,
+      unitId: input.unitId,
+      createdBy: input.createdBy,
+      createdByEmail: input.createdByEmail,
+      createdAt: nowIso,
+      expiresAt: expires,
+      revokedAt: null,
+      viewCount: 0,
+    },
+  };
+}
+
+export async function readActiveShare(token: string, now = Date.now()): Promise<UnitShareRecord | null> {
+  if (!isShareToken(token) || !databaseConfig()) return null;
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: `SELECT id, unit_id, created_by, created_by_email, created_at, expires_at, revoked_at, view_count
+      FROM unit_shares WHERE token_hash = ?`,
+    args: [hashToken(token)],
+  });
+  const row = result.rows[0] as unknown as UnitShareRow | undefined;
+  if (!row) return null;
+  const share = mapShare(row);
+  if (!shareIsActive(share, now)) return null;
+  const creator = await findUserById(share.createdBy);
+  if (!shareCreatorStillAllows(creator)) return null;
+  return share;
+}
+
+export async function listActiveUnitShares(input: {
+  unitId: string;
+  actorUserId: string;
+  actorIsAdmin: boolean;
+  now?: number;
+}): Promise<UnitShareRecord[]> {
+  await ensureSchema();
+  const nowIso = new Date(input.now ?? Date.now()).toISOString();
+  const result = await getClient().execute({
+    sql: `SELECT id, unit_id, created_by, created_by_email, created_at, expires_at, revoked_at, view_count
+      FROM unit_shares
+      WHERE unit_id = ? AND revoked_at IS NULL AND expires_at > ?
+        AND (? = 1 OR created_by = ?)
+      ORDER BY created_at DESC`,
+    args: [input.unitId, nowIso, input.actorIsAdmin ? 1 : 0, input.actorUserId],
+  });
+  return result.rows.map((row) => mapShare(row as unknown as UnitShareRow));
+}
+
+export async function revokeUnitShare(input: {
+  id: string;
+  actorUserId: string;
+  actorIsAdmin: boolean;
+}): Promise<boolean> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: `UPDATE unit_shares SET revoked_at = ?
+      WHERE id = ? AND revoked_at IS NULL AND (? = 1 OR created_by = ?)`,
+    args: [new Date().toISOString(), input.id, input.actorIsAdmin ? 1 : 0, input.actorUserId],
+  });
+  return Number(result.rowsAffected ?? 0) > 0;
+}
+
+export async function recordShareView(id: string, now = Date.now()): Promise<void> {
+  await ensureSchema();
+  await getClient().execute({
+    sql: `UPDATE unit_shares SET view_count = view_count + 1
+      WHERE id = ? AND revoked_at IS NULL AND expires_at > ?`,
+    args: [id, new Date(now).toISOString()],
+  });
 }

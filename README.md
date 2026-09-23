@@ -58,6 +58,19 @@ Sign-in records the account, UTC time, IP, user agent, and a short fingerprint (
 
 Sessions are random tokens in an HTTP-only, `SameSite=Lax` cookie (`rr_session`). The database stores only a SHA-256 of the token. Cookies are marked `Secure` in production. A session lasts 14 days and is checked on every request, so disable and force-logout take effect immediately. Passwords are hashed with bcrypt. Server Actions rely on Next.js Origin checks for CSRF. The Stripe webhook is authorized by its signing secret, not a cookie.
 
+### Single-unit share links
+
+A signed-in broker or administrator who can open the boards can send a prospect one unit.
+
+1. Open that unit and choose **Create share link**.
+2. Copy the URL and send it to the prospect. The raw link is shown once. The access database stores only a SHA-256 of the token, who created it, and which unit.
+3. The prospect can open that unit — tour, floor plan, rent, and the rest of the unit page — without a broker login.
+4. The same link does not open the homepage, category boards, other units, the access desk, or account pages. Those still require a broker session.
+5. The link expires 14 days after it is created. **Revoke** on the unit page stops it immediately. A disabled account, or an outside broker who can no longer browse because billing lapsed, also stops that person’s links.
+6. Administrators can revoke any active link on the unit. A broker can revoke only links they created.
+
+The `unit_shares` table is created in the existing Turso database the first time the app connects. If the unit is later removed from the vacancy file, the link stops opening it.
+
 ### Share-risk flags
 
 The broker list shows **Possible shared login** when any of these are true. The same text is on the access desk.

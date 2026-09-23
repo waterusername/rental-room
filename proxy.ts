@@ -2,11 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { databaseConfig, SESSION_COOKIE, viewerCanBrowse } from "@/lib/auth/config";
 import { readSession } from "@/lib/auth/db";
 import { safeNextPath } from "@/lib/auth/http";
+import { isAnonymousSharePath } from "@/lib/auth/share-access";
 import type { AuthSession } from "@/lib/auth/types";
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
-  if (isPublic(pathname)) return NextResponse.next();
+  if (pathname === "/api/stripe/webhook") return NextResponse.next();
+  // Token is checked again in the share page. This does not grant a session.
+  if (isAnonymousSharePath(pathname)) return sharePassthrough();
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   let session: AuthSession | null = null;
@@ -63,8 +66,12 @@ export const config = {
   matcher: ["/((?!_next/static|favicon.ico|icon.svg).*)"],
 };
 
-function isPublic(pathname: string): boolean {
-  return pathname === "/api/stripe/webhook";
+function sharePassthrough() {
+  const response = NextResponse.next();
+  response.headers.set("Referrer-Policy", "no-referrer");
+  response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
 }
 
 function isAsset(pathname: string): boolean {
