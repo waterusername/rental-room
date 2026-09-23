@@ -51,6 +51,17 @@ export function shareIsActive(
   return true;
 }
 
+export type ShareLifecycle = "active" | "revoked" | "expired";
+
+export function shareLifecycle(
+  share: { expiresAt: string; revokedAt: string | null },
+  now: number,
+): ShareLifecycle {
+  if (share.revokedAt) return "revoked";
+  if (!shareIsActive({ expiresAt: share.expiresAt, revokedAt: null }, now)) return "expired";
+  return "active";
+}
+
 /** Same browse rule as the boards, plus the account must still be active. */
 export function shareCreatorStillAllows(
   user: { active: boolean; role: Role; billingStatus: BillingStatus; email?: string | null } | null,

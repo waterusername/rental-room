@@ -42,11 +42,15 @@ test("unit share tokens are hashed, scoped, expiring, and revocable", async () =
 
   const created = await db.createUnitShare({
     unitId: "apt-344-targee-street-unit-1b",
+    unitLabel: "344 Targee Street, Unit 1B",
     createdBy: broker.id,
     createdByEmail: broker.email,
   });
   assert.equal(created.token.includes("targee"), false);
+  assert.notEqual(created.share.id, created.token);
   assert.equal(created.share.unitId, "apt-344-targee-street-unit-1b");
+  assert.equal(created.share.unitLabel, "344 Targee Street, Unit 1B");
+  assert.equal(created.share.lastViewedAt, null);
   const lifetime = Date.parse(created.share.expiresAt) - Date.parse(created.share.createdAt);
   assert.equal(lifetime, 14 * 24 * 60 * 60 * 1000);
 
@@ -57,21 +61,22 @@ test("unit share tokens are hashed, scoped, expiring, and revocable", async () =
   assert.equal(await db.readActiveShare("a".repeat(43)), null);
 
   await db.recordShareView(created.share.id);
-  const listed = await db.listActiveUnitShares({
+  const listed = await db.listUnitShareHistory({
     unitId: created.share.unitId,
     actorUserId: broker.id,
     actorIsAdmin: false,
   });
   assert.equal(listed.length, 1);
   assert.equal(listed[0]?.viewCount, 1);
+  assert.ok(listed[0]?.lastViewedAt);
   assert.equal("token" in listed[0]!, false);
-  const hidden = await db.listActiveUnitShares({
+  const hidden = await db.listUnitShareHistory({
     unitId: created.share.unitId,
     actorUserId: other.id,
     actorIsAdmin: false,
   });
   assert.equal(hidden.length, 0);
-  const visibleToAdmin = await db.listActiveUnitShares({
+  const visibleToAdmin = await db.listUnitShareHistory({
     unitId: created.share.unitId,
     actorUserId: admin.id,
     actorIsAdmin: true,
@@ -166,6 +171,17 @@ test("unit share tokens are hashed, scoped, expiring, and revocable", async () =
     createdByEmail: broker.email,
   });
   assert.equal((await db.readActiveShare(replacement.token))?.unitId, limitUnit);
+
+  const brokerAudit = await db.listSharesByUser(broker.id);
+  assert.ok(brokerAudit.rows.length > 0);
+  assert.equal(brokerAudit.rows.every((row) => row.createdBy === broker.id && row.createdByEmail === broker.email), true);
+  assert.equal(brokerAudit.rows.some((row) => row.unitId === "apt-36-grove-avenue-unit-1"), false);
+  assert.equal(brokerAudit.rows.some((row) => row.id === created.share.id && row.revokedAt), true);
+  const otherAudit = await db.listSharesByUser(other.id);
+  assert.equal(otherAudit.rows.some((row) => row.id === otherShare.share.id && row.revokedAt), true);
+  const counts = await db.shareCountsByUser();
+  assert.ok((counts.get(broker.id)?.units ?? 0) >= 2);
+  assert.equal(counts.get(broker.id)?.links, brokerAudit.total);
 });
 
 test.after(() => {
