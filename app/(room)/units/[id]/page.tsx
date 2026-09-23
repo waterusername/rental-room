@@ -198,6 +198,7 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
                 alt={photo.alt}
                 fill
                 className="object-cover"
+                style={{ objectPosition: photo.objectPosition ?? "center" }}
                 sizes="576px"
               />
             </div>

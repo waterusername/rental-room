@@ -1,0 +1,12 @@
+{
+  "note": "Unit-specific exterior photos. A listing here uses this image on its card and detail page and does not fall back to the shared Google Street View photo for that address. Other units stay on Street View. npm run streetview does not replace these files.",
+  "photos": {
+    "apt-124-alaska-st-unit-2-bsmt": {
+      "src": "/exteriors/apt-124-alaska-st-unit-2-bsmt.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 124 Alaska St, Unit 2 basement, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 22%"
+    }
+  }
+}

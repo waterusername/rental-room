@@ -46,10 +46,7 @@ export function CategoryView({ category }: { category: Category }) {
         photos={Object.fromEntries(
           listings.map((listing) => {
             const photo = exteriorFor(listing);
-            return [
-              listing.id,
-              photo ? { src: photo.src, kind: photo.kind, alt: photo.alt, credit: photo.credit } : null,
-            ];
+            return [listing.id, photo];
           }),
         )}
         variant={isHome ? "apartment" : "inventory"}

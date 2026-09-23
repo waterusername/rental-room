@@ -70,6 +70,7 @@ function isPublic(pathname: string): boolean {
 function isAsset(pathname: string): boolean {
   return (
     pathname.startsWith("/street-view/") ||
+    pathname.startsWith("/exteriors/") ||
     pathname.startsWith("/layouts/") ||
     pathname.startsWith("/_next/image")
   );

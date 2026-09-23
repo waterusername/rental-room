@@ -8,6 +8,7 @@ import {
   statusTone,
   unitLabel,
 } from "@/lib/format";
+import type { ExteriorPhoto } from "@/lib/street-view";
 import type { Listing } from "@/lib/types";
 
 export function ListingCard({
@@ -15,7 +16,7 @@ export function ListingCard({
   photo,
 }: {
   listing: Listing;
-  photo: { src: string; kind: "streetview" | "map"; alt: string; credit: string } | null;
+  photo: ExteriorPhoto | null;
 }) {
   const name = `${listing.address}, ${unitLabel(listing.unit)}`;
   return (
@@ -31,10 +32,11 @@ export function ListingCard({
               alt={photo.alt}
               fill
               className="object-cover"
+              style={{ objectPosition: photo.objectPosition ?? "center" }}
               sizes="(min-width: 1280px) 360px, (min-width: 640px) 50vw, 100vw"
             />
             <span className="absolute bottom-2 left-2 rounded-full bg-[#1b3a31]/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-              {photo.kind === "streetview" ? "Exterior" : "Map"}
+              {photo.kind === "map" ? "Map" : "Exterior"}
             </span>
           </div>
         ) : null}
