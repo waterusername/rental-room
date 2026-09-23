@@ -19,9 +19,11 @@ const UNIT_ORDER: UnitGroup[] = ["0", "1", "2", "3", "4", "5", "garage", "storag
 
 export function Browser({
   listings,
+  photos,
   variant,
 }: {
   listings: Listing[];
+  photos: Record<string, { src: string; kind: "streetview" | "map"; alt: string; credit: string } | null>;
   variant: "apartment" | "inventory";
 }) {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -64,7 +66,7 @@ export function Browser({
       ) : (
         <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {shown.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard key={listing.id} listing={listing} photo={photos[listing.id] ?? null} />
           ))}
         </ul>
       )}

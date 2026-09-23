@@ -8,12 +8,16 @@ import {
   statusTone,
   unitLabel,
 } from "@/lib/format";
-import { exteriorFor } from "@/lib/street-view";
 import type { Listing } from "@/lib/types";
 
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({
+  listing,
+  photo,
+}: {
+  listing: Listing;
+  photo: { src: string; kind: "streetview" | "map"; alt: string; credit: string } | null;
+}) {
   const name = `${listing.address}, ${unitLabel(listing.unit)}`;
-  const photo = exteriorFor(listing);
   return (
     <li>
       <Link
