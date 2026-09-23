@@ -1,5 +1,5 @@
 import { inventory } from "@/lib/inventory";
-import { telHref } from "@/lib/format";
+import { isNamedPersonPhone, telHref } from "@/lib/format";
 
 export function SiteFooter() {
   const { contact, source } = inventory;
@@ -24,9 +24,15 @@ export function SiteFooter() {
           <ul className="mt-3 space-y-1 text-sm">
             {contact.phones.map((phone) => (
               <li key={phone.number}>
-                <a className="text-ink" href={telHref(phone.number)}>
-                  {phone.label}: {phone.number}
-                </a>
+                {isNamedPersonPhone(phone) ? (
+                  <span>
+                    {phone.label}: {phone.number}
+                  </span>
+                ) : (
+                  <a className="text-ink" href={telHref(phone.number)}>
+                    {phone.label}: {phone.number}
+                  </a>
+                )}
               </li>
             ))}
           </ul>

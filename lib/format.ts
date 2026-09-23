@@ -150,6 +150,16 @@ export function telHref(number: string): string {
   return `tel:+1${local}`;
 }
 
+const NAMED_PERSON_LABEL = /dimitry|nia|najjar|naja/i;
+const NAMED_PERSON_NUMBERS = new Set(["3477430880", "3478995597"]);
+
+/** Dimitry and Nia are listed as text only. Their numbers are not call buttons. */
+export function isNamedPersonPhone(phone: { label: string; number: string }): boolean {
+  const digits = phone.number.replace(/\D/g, "");
+  const local = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  return NAMED_PERSON_LABEL.test(phone.label) || NAMED_PERSON_NUMBERS.has(local);
+}
+
 export function applyHref(email: string, listing: Listing): string {
   const subject = `Rental application — ${listing.address} ${unitLabel(listing.unit)}`;
   return `mailto:${email}?subject=${encodeURIComponent(subject)}`;

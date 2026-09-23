@@ -11,11 +11,13 @@ import {
   rentSummary,
   statusLabel,
   statusTone,
+  isNamedPersonPhone,
   telHref,
   unitLabel,
   utilitiesLabel,
 } from "@/lib/format";
 import { allListings, categoryMeta, getListing, inventory, trackerFor } from "@/lib/inventory";
+import { floorPlanFor } from "@/lib/floor-plan";
 import { exteriorFor } from "@/lib/street-view";
 
 export function generateStaticParams() {
@@ -48,6 +50,7 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
   const note = uniqueNotes(listing.officeNotes, listing.notes);
   const title = `${listing.address}, ${unitLabel(listing.unit)}`;
   const photo = exteriorFor(listing);
+  const floorPlan = floorPlanFor(listing);
   const extraTour =
     tracker?.tourUrl && !listing.tours.some((tour) => tour.url === tracker.tourUrl)
       ? tracker.tourUrl
@@ -103,15 +106,17 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
         >
           Apply by email
         </a>
-        {inventory.contact.phones.map((phone) => (
-          <a
-            key={phone.number}
-            href={telHref(phone.number)}
-            className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline"
-          >
-            Call {phone.label}
-          </a>
-        ))}
+        {inventory.contact.phones
+          .filter((phone) => !isNamedPersonPhone(phone))
+          .map((phone) => (
+            <a
+              key={phone.number}
+              href={telHref(phone.number)}
+              className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline"
+            >
+              Call {phone.label}
+            </a>
+          ))}
       </div>
 
       <section className="mt-8" aria-labelledby="facts-heading">
@@ -145,6 +150,25 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
           {listing.prospect ? <Fact label="Prospect" value={listing.prospect} /> : null}
         </dl>
       </section>
+
+      {floorPlan ? (
+        <section className="mt-8" aria-labelledby="plan-heading">
+          <h2 id="plan-heading" className="font-serif text-2xl font-semibold">
+            Floor plan
+          </h2>
+          <p className="mt-2 text-sm text-muted">Layout from the Matterport property report for this unit.</p>
+          <figure className="mt-4 overflow-hidden rounded-lg border border-line bg-white shadow-[var(--shadow)]">
+            <Image
+              src={floorPlan.src}
+              alt={floorPlan.alt}
+              width={1600}
+              height={1200}
+              className="h-auto w-full"
+              sizes="(min-width: 1152px) 1152px, 100vw"
+            />
+          </figure>
+        </section>
+      ) : null}
 
       <section className="mt-8" aria-labelledby="tour-heading">
         <h2 id="tour-heading" className="font-serif text-2xl font-semibold">

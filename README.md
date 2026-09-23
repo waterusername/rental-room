@@ -29,7 +29,7 @@ Deploy on Vercel as a Next.js app. No environment variables are required.
 
 The residential tracker is used to match apartments that already appear on the home grid. Tracker-only rows are not added as extra cards.
 
-`contact.applyEmail` and `contact.phones` are the apply mailto and phone links on each unit.
+`contact.applyEmail` is the apply mailto on each unit. The office phone is a call link. Dimitry’s number is plain text in the footer, not a call button.
 
 Office notes are shown as written in the file. Edit a note in the JSON if it should not be public.
 
@@ -46,6 +46,8 @@ npm run streetview
 The script skips files that are already downloaded. Pass `--force` to replace them. It geocodes with Nominatim (slowly, on purpose), then saves a Google Street View image when one is within about 80 meters. Set `GOOGLE_MAPS_API_KEY` to use the official Street View Static API. Without a key, the script still saves a real panorama thumbnail. If Street View has no nearby coverage, it saves a map pin instead. Either way the card is not left blank.
 
 `data/street-view-manifest.json` maps each normalized address to `/street-view/<slug>.jpg`.
+
+Apartment detail pages also show a Matterport floor plan when `public/layouts/` has a PNG whose model id matches the unit’s tour URL (`m=`). Units listed without a layout simply omit that section.
 
 ## What is not in v1
 
