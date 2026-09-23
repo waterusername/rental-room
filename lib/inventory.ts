@@ -1,5 +1,6 @@
 import raw from "@/data/rental-listings.json";
 import { addressKey, unitKey } from "./match";
+import { assertApartmentExteriors } from "./street-view";
 import type { Category, InventoryFile, Listing, TrackerRow } from "./types";
 
 function asInventory(value: InventoryFile): InventoryFile {
@@ -24,13 +25,15 @@ function asInventory(value: InventoryFile): InventoryFile {
 
 export const inventory = asInventory(raw as InventoryFile);
 
+assertApartmentExteriors(inventory.listings.apartments);
+
 export const CATEGORY_ORDER: { category: Category; href: string; label: string; title: string; lede: string }[] = [
   {
     category: "apartment",
     href: "/",
     label: "Apartments",
     title: "Apartments",
-    lede: "Residential vacancies from the office sheet. Rents, program flags, days vacant, and a Matterport tour when a link is on file.",
+    lede: "Residential vacancies from the office sheet. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, days vacant, and a Matterport tour when a link is on file.",
   },
   {
     category: "garage-storage",

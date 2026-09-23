@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Chip } from "@/components/Chip";
@@ -15,6 +16,7 @@ import {
   utilitiesLabel,
 } from "@/lib/format";
 import { allListings, categoryMeta, getListing, inventory, trackerFor } from "@/lib/inventory";
+import { exteriorFor } from "@/lib/street-view";
 
 export function generateStaticParams() {
   return allListings().map((listing) => ({ id: listing.id }));
@@ -45,6 +47,7 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
   const tracker = trackerFor(listing);
   const note = uniqueNotes(listing.officeNotes, listing.notes);
   const title = `${listing.address}, ${unitLabel(listing.unit)}`;
+  const photo = exteriorFor(listing);
   const extraTour =
     tracker?.tourUrl && !listing.tours.some((tour) => tour.url === tracker.tourUrl)
       ? tracker.tourUrl
@@ -66,6 +69,21 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
         {unitLabel(listing.unit)}
         {listing.unitType ? ` · ${listing.unitType}` : ""}
       </p>
+      {photo ? (
+        <figure className="mt-6 overflow-hidden rounded-lg border border-line bg-panel shadow-[var(--shadow)]">
+          <div className="relative aspect-[16/10] bg-panel-2">
+            <Image
+              src={photo.src}
+              alt={photo.alt}
+              fill
+              priority
+              className="object-cover"
+              sizes="(min-width: 1152px) 1152px, 100vw"
+            />
+          </div>
+          <figcaption className="border-t border-line px-4 py-2 text-xs text-muted">{photo.credit}</figcaption>
+        </figure>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
         <Chip tone={statusTone(listing.status)}>{statusLabel(listing.status)}</Chip>
         {listing.nycha === "YES" ? <Chip tone="ok">NYCHA</Chip> : null}

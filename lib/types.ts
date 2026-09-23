@@ -74,22 +74,22 @@ export type InventoryFile = {
 
 export type Filters = {
   q: string;
+  beds: string;
+  baths: string;
   status: string;
   unitType: string;
   zip: string;
   rent: string;
-  nycha: string;
   tour: string;
-  tracked: string;
 };
 
 export const EMPTY_FILTERS: Filters = {
   q: "",
+  beds: "",
+  baths: "",
   status: "",
   unitType: "",
   zip: "",
   rent: "",
-  nycha: "",
   tour: "",
-  tracked: "",
 };

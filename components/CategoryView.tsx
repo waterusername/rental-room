@@ -37,11 +37,7 @@ export function CategoryView({ category }: { category: Category }) {
           ))}
         </ul>
       ) : null}
-      <Browser
-        listings={listings}
-        tracker={isHome ? inventory.listings.residentialTracker : []}
-        showProgramFilters={isHome}
-      />
+      <Browser listings={listings} variant={isHome ? "apartment" : "inventory"} />
     </div>
   );
 }
