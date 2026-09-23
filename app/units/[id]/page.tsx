@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Chip } from "@/components/Chip";
 import { TourViewer } from "@/components/TourViewer";
 import {
   applyHref,
-  formatDate,
+  bathCount,
+  bedCount,
   formatMoney,
   rentSummary,
   statusLabel,
-  statusTone,
+  isNamedPersonPhone,
   telHref,
   unitLabel,
   utilitiesLabel,
 } from "@/lib/format";
 import { allListings, categoryMeta, getListing, inventory, trackerFor } from "@/lib/inventory";
+import { floorPlansFor } from "@/lib/floor-plan";
+import { exteriorFor } from "@/lib/street-view";
 
 export function generateStaticParams() {
   return allListings().map((listing) => ({ id: listing.id }));
@@ -45,10 +48,15 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
   const tracker = trackerFor(listing);
   const note = uniqueNotes(listing.officeNotes, listing.notes);
   const title = `${listing.address}, ${unitLabel(listing.unit)}`;
-  const extraTour =
-    tracker?.tourUrl && !listing.tours.some((tour) => tour.url === tracker.tourUrl)
-      ? tracker.tourUrl
-      : null;
+  const photo = exteriorFor(listing);
+  const tours = trackerTour(listing.tours, tracker?.tourUrl ?? null);
+  const floorPlans = floorPlansFor({ ...listing, tours });
+
+  const beds = bedCount(listing);
+  const baths = bathCount(listing);
+  const washer = yesNo(listing.washerDryer, "Yes", "No");
+  const nycha = yesNo(listing.nycha, "Yes", "No");
+  const hpd = yesNo(listing.hpdTrustFund, "Yes", "No");
 
   return (
     <article className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -66,41 +74,74 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
         {unitLabel(listing.unit)}
         {listing.unitType ? ` · ${listing.unitType}` : ""}
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Chip tone={statusTone(listing.status)}>{statusLabel(listing.status)}</Chip>
-        {listing.nycha === "YES" ? <Chip tone="ok">NYCHA</Chip> : null}
-        {listing.nycha === "NO" ? <Chip>Not NYCHA</Chip> : null}
-        {listing.hpdTrustFund === "YES" ? <Chip tone="ok">HPD / Trust Fund</Chip> : null}
-        {listing.hpdTrustFund === "NO" ? <Chip>Not HPD / Trust Fund</Chip> : null}
-        {listing.washerDryer === "YES" ? <Chip>Washer/dryer</Chip> : null}
-        {listing.washerDryer === "NO" ? <Chip>No washer/dryer</Chip> : null}
-        {listing.tourReady === "DONE" ? <Chip tone="ok">Tour marked ready</Chip> : null}
-        {listing.utilitiesIncluded ? <Chip>{utilitiesLabel(listing.utilitiesIncluded)}</Chip> : null}
-      </div>
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        <a
-          href={applyHref(inventory.contact.applyEmail, listing)}
-          className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
-        >
-          Apply by email
-        </a>
-        {inventory.contact.phones.map((phone) => (
-          <a
-            key={phone.number}
-            href={telHref(phone.number)}
-            className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline"
-          >
-            Call {phone.label}
-          </a>
-        ))}
-      </div>
+      <section className="mt-6" aria-labelledby="tour-heading">
+        <h2 id="tour-heading" className="font-serif text-2xl font-semibold">
+          Virtual tour
+        </h2>
+        {tours.length > 0 ? (
+          <div className="mt-3">
+            <TourViewer tours={tours} title={title} />
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-muted">Tour not available.</p>
+        )}
+      </section>
+
+      {floorPlans.length > 0 ? (
+        <section className="mt-8" aria-labelledby="plan-heading">
+          <h2 id="plan-heading" className="font-serif text-2xl font-semibold">
+            {floorPlans.length > 1 ? "Floor plans" : "Floor plan"}
+          </h2>
+          <div className="mt-4 space-y-6">
+            {floorPlans.map((floorPlan) => (
+              <div
+                key={floorPlan.src}
+                className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_13rem]"
+              >
+                <figure className="overflow-hidden rounded-lg border border-line bg-white shadow-[var(--shadow)]">
+                  {floorPlan.caption ? (
+                    <figcaption className="border-b border-line px-4 py-3 text-sm font-semibold">
+                      {floorPlan.caption}
+                    </figcaption>
+                  ) : null}
+                  <Image
+                    src={floorPlan.src}
+                    alt={floorPlan.alt}
+                    width={1600}
+                    height={1200}
+                    className="h-auto w-full"
+                    sizes="(min-width: 1024px) 900px, 100vw"
+                  />
+                </figure>
+                {floorPlan.sqft != null ? (
+                  <div className="rounded-lg border border-line bg-panel px-4 py-4 shadow-[var(--shadow)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">SQFT</p>
+                    <p className="mt-1 font-serif text-3xl font-semibold tracking-tight">
+                      {floorPlan.sqft.toLocaleString("en-US")}
+                    </p>
+                    <p className="text-sm text-muted">sq ft</p>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="mt-8" aria-labelledby="facts-heading">
         <h2 id="facts-heading" className="font-serif text-2xl font-semibold">
-          Rents and facts
+          Details
         </h2>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {beds != null ? <Fact label="Bedrooms" value={beds === 0 ? "Studio" : String(beds)} /> : null}
+          {baths != null ? <Fact label="Bathrooms" value={String(baths)} /> : null}
+          {washer ? <Fact label="Washer/dryer" value={washer} /> : null}
+          {listing.utilitiesIncluded ? (
+            <Fact label="Utilities" value={utilitiesLabel(listing.utilitiesIncluded)} />
+          ) : null}
+          {nycha ? <Fact label="NYCHA" value={nycha} /> : null}
+          {hpd ? <Fact label="HPD / Trust Fund" value={hpd} /> : null}
           {listing.minRent != null ? <Fact label="Min rent" value={formatMoney(listing.minRent)} /> : null}
           {listing.targetRent != null ? <Fact label="Target rent" value={formatMoney(listing.targetRent)} /> : null}
           {listing.potentialRent != null ? (
@@ -111,80 +152,61 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
           ) : null}
           <Fact label="Status" value={statusLabel(listing.status)} />
           <Fact label="Zip" value={listing.zip ?? "Not listed"} />
-          <Fact label="Unit type" value={listing.unitType || "Not listed"} />
-          <Fact
-            label="Days vacant"
-            value={listing.daysVacant == null ? "Not listed" : String(listing.daysVacant)}
-          />
-          {listing.bedrooms != null ? <Fact label="Bedrooms" value={String(listing.bedrooms)} /> : null}
-          {listing.baths != null ? <Fact label="Baths" value={String(listing.baths)} /> : null}
-          {listing.reservationDate ? (
-            <Fact label="Reservation date" value={formatDate(listing.reservationDate) ?? listing.reservationDate} />
-          ) : null}
-          {listing.daysSinceReservation != null ? (
-            <Fact label="Days since reservation" value={String(listing.daysSinceReservation)} />
-          ) : null}
-          {listing.prospect ? <Fact label="Prospect" value={listing.prospect} /> : null}
+          {listing.unitType ? <Fact label="Unit type" value={listing.unitType} /> : null}
         </dl>
-      </section>
-
-      <section className="mt-8" aria-labelledby="tour-heading">
-        <h2 id="tour-heading" className="font-serif text-2xl font-semibold">
-          Virtual tour
-        </h2>
-        {listing.tours.length > 0 ? (
-          <div className="mt-4">
-            <TourViewer tours={listing.tours} title={title} />
-          </div>
-        ) : (
-          <p className="mt-4 rounded-lg border border-dashed border-line bg-panel px-4 py-6 text-muted">
-            No Matterport link is on file for this unit.
-          </p>
-        )}
-        {extraTour ? (
-          <p className="mt-3 text-sm">
-            Residential tracker also lists{" "}
-            <a href={extraTour} className="font-semibold text-accent" target="_blank" rel="noreferrer">
-              another tour
-            </a>
-            .
-          </p>
-        ) : null}
-      </section>
-
-      <section className="mt-8" aria-labelledby="notes-heading">
-        <h2 id="notes-heading" className="font-serif text-2xl font-semibold">
-          Office notes
-        </h2>
         {note ? (
           <p className="mt-4 whitespace-pre-wrap rounded-lg border border-line bg-panel-2 px-4 py-4 text-sm leading-6">
             {note}
           </p>
-        ) : (
-          <p className="mt-4 text-muted">No office note on this row.</p>
-        )}
+        ) : null}
+        <div className="mt-5 flex flex-wrap gap-3">
+          <a
+            href={applyHref(inventory.contact.applyEmail, listing)}
+            className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
+          >
+            Apply by email
+          </a>
+          {inventory.contact.phones
+            .filter((phone) => !isNamedPersonPhone(phone))
+            .map((phone) => (
+              <a
+                key={phone.number}
+                href={telHref(phone.number)}
+                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline"
+              >
+                Call {phone.label}
+              </a>
+            ))}
+        </div>
       </section>
 
-      {tracker ? (
-        <section className="mt-8" aria-labelledby="tracker-heading">
-          <h2 id="tracker-heading" className="font-serif text-2xl font-semibold">
-            Residential tracker
+      {photo ? (
+        <section className="mt-10" aria-labelledby="exterior-heading">
+          <h2 id="exterior-heading" className="font-serif text-2xl font-semibold">
+            Building exterior
           </h2>
-          <p className="mt-2 max-w-2xl text-sm text-muted">
-            This address is also on the residential tracker. It is not repeated as its own card on
-            the apartment grid.
-          </p>
-          <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Fact label="Tracker status" value={tracker.status ?? "Not listed"} />
-            <Fact label="Reserved on tracker" value={tracker.reserved ? "Yes" : "No"} />
-            <Fact label="Prospect" value={tracker.prospect ?? "Not listed"} />
-            <Fact label="Tracker unit type" value={tracker.unitType || "Not listed"} />
-            {tracker.rent != null ? <Fact label="Tracker rent" value={formatMoney(tracker.rent)} /> : null}
-          </dl>
+          <figure className="mt-4 max-w-xl overflow-hidden rounded-lg border border-line bg-panel shadow-[var(--shadow)]">
+            <div className="relative aspect-[16/10] bg-panel-2">
+              <Image
+                src={photo.src}
+                alt={photo.alt}
+                fill
+                className="object-cover"
+                sizes="576px"
+              />
+            </div>
+            <figcaption className="border-t border-line px-4 py-2 text-xs text-muted">{photo.credit}</figcaption>
+          </figure>
         </section>
       ) : null}
     </article>
   );
+}
+
+function yesNo(value: "YES" | "NO" | null, yes: string, no: string): string | null {
+  if (value === "YES") return yes;
+  if (value === "NO") return no;
+  return null;
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -194,6 +216,11 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dd className="mt-1 text-sm font-semibold">{value}</dd>
     </div>
   );
+}
+
+function trackerTour(tours: { url: string; label: string | null }[], tourUrl: string | null) {
+  if (!tourUrl || tours.some((tour) => tour.url === tourUrl)) return tours;
+  return [...tours, { url: tourUrl, label: "Additional tour" }];
 }
 
 function uniqueNotes(officeNotes: string | null, notes: string | null): string | null {

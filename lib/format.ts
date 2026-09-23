@@ -34,7 +34,16 @@ export function unitLabel(unit: string): string {
 }
 
 export function parseBeds(unitType: string): number | null {
-  const match = unitType.trim().match(/^(\d+)\s*(?:br|b)\b/i);
+  const match = unitType.trim().match(/^(\d+(?:\.\d+)?)\s*(?:br|b)\b/i);
+  if (!match) return null;
+  return Number(match[1]);
+}
+
+/** Second half of strings like "2B/1B", "3BR/1BA", "4B/1.5B", "1 bedroom / 1 bath". */
+export function parseBaths(unitType: string): number | null {
+  const match = unitType.trim().match(
+    /^\d+(?:\.\d+)?\s*b(?:ed(?:room)?s?|r)?\s*\/\s*(\d+(?:\.\d+)?)\s*(?:b(?:ath(?:room)?s?|a)?|baths?)\b/i,
+  );
   if (!match) return null;
   return Number(match[1]);
 }
@@ -42,6 +51,26 @@ export function parseBeds(unitType: string): number | null {
 export function bedCount(listing: Listing): number | null {
   if (listing.bedrooms != null) return listing.bedrooms;
   return parseBeds(listing.unitType);
+}
+
+export function bathCount(listing: Listing): number | null {
+  if (listing.baths != null) return listing.baths;
+  return parseBaths(listing.unitType);
+}
+
+/** Stable option value for a bed or bath count. "1.5" stays "1.5"; 2 stays "2". */
+export function countKey(value: number | null): string | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  return String(value);
+}
+
+export function bedroomOptionLabel(key: string): string {
+  if (key === "0") return "Studio";
+  return key === "1" ? "1 bedroom" : `${key} bedrooms`;
+}
+
+export function bathroomOptionLabel(key: string): string {
+  return key === "1" ? "1 bathroom" : `${key} bathrooms`;
 }
 
 export type UnitGroup =
@@ -119,6 +148,16 @@ export function telHref(number: string): string {
   const digits = number.replace(/\D/g, "");
   const local = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
   return `tel:+1${local}`;
+}
+
+const NAMED_PERSON_LABEL = /dimitry|nia|najjar|naja/i;
+const NAMED_PERSON_NUMBERS = new Set(["3477430880", "3478995597"]);
+
+/** Dimitry and Nia are listed as text only. Their numbers are not call buttons. */
+export function isNamedPersonPhone(phone: { label: string; number: string }): boolean {
+  const digits = phone.number.replace(/\D/g, "");
+  const local = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  return NAMED_PERSON_LABEL.test(phone.label) || NAMED_PERSON_NUMBERS.has(local);
 }
 
 export function applyHref(email: string, listing: Listing): string {

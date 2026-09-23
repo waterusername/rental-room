@@ -1,10 +1,5 @@
-import type { Metadata } from "next";
-import { CategoryView } from "@/components/CategoryView";
-
-export const metadata: Metadata = {
-  title: "Pipeline",
-};
+import { redirect } from "next/navigation";
 
 export default function PipelinePage() {
-  return <CategoryView category="pipeline" />;
+  redirect("/");
 }

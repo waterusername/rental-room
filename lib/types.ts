@@ -1,9 +1,4 @@
-export type Category =
-  | "apartment"
-  | "garage-storage"
-  | "commercial"
-  | "pipeline"
-  | "reserved";
+export type Category = "apartment" | "commercial" | "garage" | "storage";
 
 export type Tour = {
   url: string;
@@ -28,7 +23,6 @@ export type Listing = {
   tourReady: string | null;
   tours: Tour[];
   officeNotes: string | null;
-  daysVacant: number | null;
   reservationDate: string | null;
   daysSinceReservation: number | null;
   bedrooms: number | null;
@@ -64,8 +58,9 @@ export type InventoryFile = {
   };
   listings: {
     apartments: Listing[];
-    garagesStorage: Listing[];
     commercial: Listing[];
+    garages: Listing[];
+    storages: Listing[];
     pipeline: Listing[];
     reserved: Listing[];
     residentialTracker: TrackerRow[];
@@ -74,22 +69,22 @@ export type InventoryFile = {
 
 export type Filters = {
   q: string;
+  beds: string;
+  baths: string;
   status: string;
   unitType: string;
   zip: string;
   rent: string;
-  nycha: string;
   tour: string;
-  tracked: string;
 };
 
 export const EMPTY_FILTERS: Filters = {
   q: "",
+  beds: "",
+  baths: "",
   status: "",
   unitType: "",
   zip: "",
   rent: "",
-  nycha: "",
   tour: "",
-  tracked: "",
 };

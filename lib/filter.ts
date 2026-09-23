@@ -1,11 +1,7 @@
-import { comparableRent, statusLabel, unitGroup } from "./format";
+import { bathCount, bedCount, comparableRent, countKey, statusLabel, unitGroup } from "./format";
 import type { Filters, Listing } from "./types";
 
-export function applyFilters(
-  listings: Listing[],
-  filters: Filters,
-  tracked: Set<string>,
-): Listing[] {
+export function applyFilters(listings: Listing[], filters: Filters): Listing[] {
   const query = filters.q.trim().toLowerCase();
   return listings.filter((listing) => {
     if (query) {
@@ -17,20 +13,19 @@ export function applyFilters(
         listing.status,
         listing.officeNotes,
         listing.notes,
-        listing.prospect,
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       if (!haystack.includes(query)) return false;
     }
+    if (filters.beds && countKey(bedCount(listing)) !== filters.beds) return false;
+    if (filters.baths && countKey(bathCount(listing)) !== filters.baths) return false;
     if (filters.status && statusLabel(listing.status) !== filters.status) return false;
     if (filters.unitType && unitGroup(listing) !== filters.unitType) return false;
     if (filters.zip && (listing.zip ?? "") !== filters.zip) return false;
-    if (filters.nycha && listing.nycha !== filters.nycha) return false;
     if (filters.tour === "yes" && listing.tours.length === 0) return false;
     if (filters.tour === "no" && listing.tours.length > 0) return false;
-    if (filters.tracked === "yes" && !tracked.has(listing.id)) return false;
     if (filters.rent) {
       const rent = comparableRent(listing);
       if (rent == null) return false;
