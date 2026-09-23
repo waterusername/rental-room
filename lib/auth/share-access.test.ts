@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import test from "node:test";
 import {
+  SHARE_TTL_DAYS,
+  SHARE_TTL_MS,
   isAnonymousSharePath,
   isShareToken,
+  parseShareTtlDays,
   shareCreatorStillAllows,
   shareIsActive,
   shareLifecycle,
   shareLink,
+  shareTtlMs,
 } from "./share-access.ts";
 
 const token = randomBytes(32).toString("base64url");
@@ -57,6 +61,21 @@ test("share URLs do not carry the unit id", () => {
   assert.equal(url.includes("targee"), false);
   assert.throws(() => shareLink("javascript:alert(1)", token));
   assert.throws(() => shareLink("https://rental-room-tau.vercel.app", "apt-344-targee-street-unit-1b"));
+});
+
+test("share links default to one day and accept only the longer windows", () => {
+  assert.equal(SHARE_TTL_DAYS, 1);
+  assert.equal(SHARE_TTL_MS, 24 * 60 * 60 * 1000);
+  assert.equal(parseShareTtlDays(null), 1);
+  assert.equal(parseShareTtlDays(""), 1);
+  assert.equal(parseShareTtlDays("1"), 1);
+  assert.equal(parseShareTtlDays("3"), 3);
+  assert.equal(parseShareTtlDays("7"), 7);
+  assert.equal(parseShareTtlDays("14"), 14);
+  assert.equal(parseShareTtlDays("2"), null);
+  assert.equal(parseShareTtlDays("30"), null);
+  assert.equal(parseShareTtlDays("14 days"), null);
+  assert.equal(shareTtlMs(14), 14 * 24 * 60 * 60 * 1000);
 });
 
 test("share history marks revoked before expired", () => {

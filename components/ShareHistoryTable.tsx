@@ -16,12 +16,13 @@ export function ShareHistoryTable({ rows, empty }: { rows: UnitShareRecord[]; em
 
   return (
     <div className="mt-4 overflow-x-auto rounded-lg border border-line bg-panel shadow-[var(--shadow)]">
-      <table className="w-full min-w-[52rem] text-left text-sm">
+      <table className="w-full min-w-[64rem] text-left text-sm">
         <thead className="border-b border-line text-[11px] uppercase tracking-[0.12em] text-muted">
           <tr>
             <th className="px-3 py-3 font-semibold">Unit</th>
             <th className="px-3 py-3 font-semibold">Created</th>
             <th className="px-3 py-3 font-semibold">Expires</th>
+            <th className="px-3 py-3 font-semibold">Revoked</th>
             <th className="px-3 py-3 font-semibold">Status</th>
             <th className="px-3 py-3 font-semibold">Views</th>
             <th className="px-3 py-3 font-semibold">Last opened</th>
@@ -41,6 +42,7 @@ export function ShareHistoryTable({ rows, empty }: { rows: UnitShareRecord[]; em
                 </td>
                 <td className="px-3 py-3 whitespace-nowrap">{formatUtc(row.createdAt)}</td>
                 <td className="px-3 py-3 whitespace-nowrap">{formatUtc(row.expiresAt)}</td>
+                <td className="px-3 py-3 whitespace-nowrap">{formatUtc(row.revokedAt)}</td>
                 <td className="px-3 py-3">
                   <Chip tone={status === "active" ? "ok" : status === "revoked" ? "alert" : "wait"}>
                     {STATUS_LABEL[status]}
