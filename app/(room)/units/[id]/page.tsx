@@ -6,7 +6,6 @@ import { viewerCanBrowse } from "@/lib/auth/config";
 import { listUnitShareHistory } from "@/lib/auth/db";
 import { getCurrentSession } from "@/lib/auth/guards";
 import { formatUtc } from "@/lib/auth/http";
-import { SHARE_TTL_CHOICES, SHARE_TTL_DAYS } from "@/lib/auth/share-access";
 import { rentSummary, statusLabel, unitLabel } from "@/lib/format";
 import { allListings, getListing } from "@/lib/inventory";
 
@@ -87,8 +86,6 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
           <ShareUnitPanel
             unitId={listing.id}
             unitTitle={unitTitle}
-            ttlDays={SHARE_TTL_DAYS}
-            ttlChoices={SHARE_TTL_CHOICES}
             links={links}
             showCreator={session?.role === "admin"}
             loadError={loadError}

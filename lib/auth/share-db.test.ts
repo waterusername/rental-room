@@ -53,16 +53,6 @@ test("unit share tokens are hashed, scoped, expiring, and revocable", async () =
   assert.equal(created.share.lastViewedAt, null);
   const lifetime = Date.parse(created.share.expiresAt) - Date.parse(created.share.createdAt);
   assert.equal(lifetime, 24 * 60 * 60 * 1000);
-  const longer = await db.createUnitShare({
-    unitId: "apt-longer-window",
-    createdBy: broker.id,
-    createdByEmail: broker.email,
-    ttlMs: 14 * 24 * 60 * 60 * 1000,
-  });
-  assert.equal(
-    Date.parse(longer.share.expiresAt) - Date.parse(longer.share.createdAt),
-    14 * 24 * 60 * 60 * 1000,
-  );
 
   const active = await db.readActiveShare(created.token);
   assert.equal(active?.unitId, "apt-344-targee-street-unit-1b");
@@ -120,7 +110,7 @@ test("unit share tokens are hashed, scoped, expiring, and revocable", async () =
     unitId: "apt-344-targee-street-unit-1b",
     createdBy: broker.id,
     createdByEmail: broker.email,
-    ttlMs: -1000,
+    now: Date.now() - 24 * 60 * 60 * 1000 - 1000,
   });
   assert.equal(await db.readActiveShare(expired.token), null);
   assert.equal((await db.readShareGate(expired.token)).status, "expired");
