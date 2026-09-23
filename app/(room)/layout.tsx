@@ -1,3 +1,4 @@
+import { BrokerDisclosure } from "@/components/BrokerDisclosure";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { requireBrowse } from "@/lib/auth/guards";
@@ -17,6 +18,9 @@ export default async function RoomLayout({ children }: { children: React.ReactNo
       </a>
       <SiteHeader viewer={{ email: session.email, name: session.name, role: session.role }} />
       <main id="inventory" className="flex-1">
+        <div className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+          <BrokerDisclosure />
+        </div>
         {children}
       </main>
       <SiteFooter />
