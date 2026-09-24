@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { passwordError } from "./http.ts";
+import { MIN_PASSWORD_LENGTH, PASSWORD_HINT } from "./password-rules.ts";
 import { parseSignupForm, selfSignupRecord } from "./signup.ts";
 
 function form(fields: Record<string, string>): FormData {
@@ -72,7 +74,12 @@ test("sign-up requires the broker terms, a matching password, and a phone number
   const short = form({ ...valid, password: "short", confirmPassword: "short" });
   const shortResult = parseSignupForm(short);
   assert.equal(shortResult.ok, false);
-  if (!shortResult.ok) assert.match(shortResult.error, /10 characters/);
+  if (!shortResult.ok) {
+    assert.equal(shortResult.error, `Use at least ${MIN_PASSWORD_LENGTH} characters.`);
+    assert.match(PASSWORD_HINT, new RegExp(String(MIN_PASSWORD_LENGTH)));
+    assert.equal(passwordError("x".repeat(MIN_PASSWORD_LENGTH - 1)), shortResult.error);
+    assert.equal(passwordError("x".repeat(MIN_PASSWORD_LENGTH)), null);
+  }
 
   const mismatch = form({ ...valid, confirmPassword: "correct horse!" });
   const mismatchResult = parseSignupForm(mismatch);

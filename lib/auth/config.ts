@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH } from "./password-rules.ts";
 import type { BillingStatus, Role } from "./types";
 
 /**
@@ -99,8 +100,8 @@ export function adminEnvWarning(): string | null {
   if (!email || !password) {
     return "Set both ADMIN_EMAIL and ADMIN_PASSWORD to create the first administrator.";
   }
-  if (password.length < 10) {
-    return "ADMIN_PASSWORD must be at least 10 characters.";
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `ADMIN_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters.`;
   }
   return null;
 }

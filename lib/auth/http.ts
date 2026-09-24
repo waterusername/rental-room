@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "./password-rules.ts";
 import type { RequestMeta } from "./types";
 
 export function clientIp(headerList: { get(name: string): string | null }): string {
@@ -92,7 +93,7 @@ export function normalizeEmail(value: string): string | null {
 }
 
 export function passwordError(password: string): string | null {
-  if (password.length < 10) return "Use at least 10 characters.";
-  if (password.length > 128) return "Use at most 128 characters.";
+  if (password.length < MIN_PASSWORD_LENGTH) return `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
+  if (password.length > MAX_PASSWORD_LENGTH) return `Use at most ${MAX_PASSWORD_LENGTH} characters.`;
   return null;
 }

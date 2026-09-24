@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { signupAction } from "@/lib/auth/actions";
+import { PasswordHint } from "@/components/auth/PasswordHint";
+import { MAX_PASSWORD_LENGTH } from "@/lib/auth/password-rules";
 import type { ActionState } from "@/lib/auth/types";
 
 const inputClass = "mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm font-normal";
@@ -68,11 +70,10 @@ export function SignupForm({
           type="password"
           autoComplete="new-password"
           required
-          minLength={10}
-          maxLength={128}
+          maxLength={MAX_PASSWORD_LENGTH}
           className={inputClass}
         />
-        <span className="mt-1 block text-xs font-normal text-muted">At least 10 characters.</span>
+        <PasswordHint />
       </label>
       <label className="block text-sm font-semibold">
         Confirm password
@@ -81,8 +82,7 @@ export function SignupForm({
           type="password"
           autoComplete="new-password"
           required
-          minLength={10}
-          maxLength={128}
+          maxLength={MAX_PASSWORD_LENGTH}
           className={inputClass}
         />
       </label>

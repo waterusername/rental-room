@@ -9,6 +9,7 @@ import {
   setBrokerActiveAction,
   updateBrokerAction,
 } from "@/lib/auth/admin-actions";
+import { PasswordHint } from "@/components/auth/PasswordHint";
 import { BILLING_LABEL, BILLING_STATUSES, type ActionState, type BillingStatus } from "@/lib/auth/types";
 
 const inputClass = "mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 text-sm font-normal";
@@ -67,6 +68,7 @@ export function CreateBrokerForm() {
       <label className="block text-sm font-semibold">
         Temporary password <span className="font-normal text-muted">(leave blank to generate one)</span>
         <input name="password" type="text" autoComplete="off" className={inputClass} />
+        <PasswordHint />
       </label>
       <label className="block text-sm font-semibold">
         Billing
