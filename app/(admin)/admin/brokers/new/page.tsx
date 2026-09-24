@@ -17,7 +17,9 @@ export default function NewBrokerPage() {
       <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
         The broker signs in with this email and temporary password, then must choose their own password. The temporary
         password is shown once and is not stored in a recoverable form. Outside brokers start as Payment required.
-        Grinberg office emails are saved as complimentary administrators.
+        Grinberg office emails entered here are saved as complimentary administrators. Brokers can also create their own
+        account from Broker sign up. Those accounts choose their own password, stay outside brokers, and are marked Self
+        sign-up.
       </p>
       <CreateBrokerForm />
     </>

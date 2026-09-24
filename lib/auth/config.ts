@@ -22,12 +22,25 @@ export function isGrinbergAdminEmail(email: string | null | undefined): boolean 
   return OFFICE.has(email.trim().toLowerCase());
 }
 
+/**
+ * Office accounts are admin-created and complimentary.
+ * Self sign-up never qualifies, including Grinberg addresses.
+ */
+export function isOfficeAccount(
+  user: { email?: string | null; selfSignup?: boolean } | null | undefined,
+): boolean {
+  if (!user || user.selfSignup) return false;
+  return isGrinbergAdminEmail(user.email);
+}
+
 export const SESSION_COOKIE = "rr_session";
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
 export const LAST_SEEN_WRITE_MS = 1000 * 60 * 5;
 export const FAILURE_WINDOW_MS = 1000 * 60 * 15;
 export const MAX_FAILURES_PER_EMAIL = 8;
 export const MAX_FAILURES_PER_IP = 30;
+export const MAX_SIGNUPS_PER_EMAIL = 8;
+export const MAX_SIGNUPS_PER_IP = 20;
 
 export function databaseConfig(): { url: string; authToken?: string } | null {
   const url = process.env.TURSO_DATABASE_URL?.trim() || process.env.DATABASE_URL?.trim() || "";
@@ -60,10 +73,10 @@ export function mapStripeSubscriptionStatus(status: string): BillingStatus {
 }
 
 export function canBrowseListings(
-  user: { role: Role; billingStatus: BillingStatus; email?: string | null },
+  user: { role: Role; billingStatus: BillingStatus; email?: string | null; selfSignup?: boolean },
   stripeOn: boolean,
 ): boolean {
-  if (user.role === "admin" || isGrinbergAdminEmail(user.email)) return true;
+  if (user.role === "admin" || isOfficeAccount(user)) return true;
   if (!stripeOn) return true;
   return user.billingStatus === "complimentary" || user.billingStatus === "active_paid";
 }
@@ -72,6 +85,7 @@ export function viewerCanBrowse(user: {
   role: Role;
   billingStatus: BillingStatus;
   email?: string | null;
+  selfSignup?: boolean;
 }): boolean {
   return canBrowseListings(user, paymentsEnforced());
 }
@@ -96,6 +110,7 @@ export function postLoginPath(input: {
   role: Role;
   billingStatus: BillingStatus;
   email?: string | null;
+  selfSignup?: boolean;
   nextPath: string;
   stripeOn: boolean;
 }): string {

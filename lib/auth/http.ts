@@ -47,7 +47,7 @@ export function safeNextPath(input: string | null | undefined): string {
   if (!decoded.startsWith("/") || decoded.startsWith("//") || decoded.includes("://") || decoded.includes("\\")) {
     return "/";
   }
-  if (value.startsWith("/login")) return "/";
+  if (value.startsWith("/login") || value.startsWith("/signup")) return "/";
   return value;
 }
 

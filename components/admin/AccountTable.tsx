@@ -34,6 +34,12 @@ export function AccountTable({ rows }: { rows: AccountStats[] }) {
                 </Link>
                 <div className="text-muted">{row.user.email}</div>
                 {row.user.company ? <div className="text-muted">{row.user.company}</div> : null}
+                {row.user.phone ? <div className="text-muted">{row.user.phone}</div> : null}
+                {row.user.selfSignup ? (
+                  <div className="mt-1">
+                    <Chip tone="neutral">Self sign-up</Chip>
+                  </div>
+                ) : null}
               </td>
               <td className="px-3 py-3">
                 <Chip tone={row.user.active ? "ok" : "alert"}>{row.user.active ? "Active" : "Disabled"}</Chip>

@@ -15,12 +15,12 @@ export async function proxy(request: NextRequest) {
       session = await readSession(token);
     } catch (error) {
       console.error("Access check failed", error instanceof Error ? error.message : "unknown");
-      if (pathname === "/login") return NextResponse.next();
+      if (isCredentialPage(pathname)) return NextResponse.next();
       return deny(request, "unavailable");
     }
   }
 
-  if (pathname === "/login") {
+  if (isCredentialPage(pathname)) {
     if (!session) return NextResponse.next();
     if (session.mustResetPassword) {
       return NextResponse.redirect(new URL("/account/password", request.url));
@@ -62,6 +62,10 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: ["/((?!_next/static|favicon.ico|icon.svg).*)"],
 };
+
+function isCredentialPage(pathname: string): boolean {
+  return pathname === "/login" || pathname === "/signup";
+}
 
 function isPublic(pathname: string): boolean {
   return pathname === "/api/stripe/webhook";

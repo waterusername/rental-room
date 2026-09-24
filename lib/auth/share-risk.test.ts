@@ -26,6 +26,7 @@ test("safe next paths stay on this site", () => {
   assert.equal(safeNextPath("//evil.example"), "/");
   assert.equal(safeNextPath("https://evil.example"), "/");
   assert.equal(safeNextPath("/login"), "/");
+  assert.equal(safeNextPath("/signup"), "/");
   assert.equal(safeNextPath("/%2F%2Fevil.example"), "/");
 });
 
@@ -71,6 +72,30 @@ test("grinberg office emails browse without a subscription", () => {
     canBrowseListings(
       { role: "broker", billingStatus: "payment_required", email: "daniel@grinbergmanagement.com" },
       true,
+    ),
+    true,
+  );
+  assert.equal(
+    canBrowseListings(
+      {
+        role: "broker",
+        billingStatus: "payment_required",
+        email: "daniel@grinbergmanagement.com",
+        selfSignup: true,
+      },
+      true,
+    ),
+    false,
+  );
+  assert.equal(
+    canBrowseListings(
+      {
+        role: "broker",
+        billingStatus: "payment_required",
+        email: "someone@grinbergmanagement.com",
+        selfSignup: true,
+      },
+      false,
     ),
     true,
   );
