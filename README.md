@@ -50,6 +50,8 @@ Production needs a hosted database. The serverless filesystem is not a durable p
 4. Redeploy.
 5. Open the site and sign in as the administrator.
 6. Open **Access desk** (`/admin`) and create a broker. New outside brokers start as **Payment required**. Copy the temporary password and send it to them. They must choose a new password before the boards open. To mark an existing broker as payment required, open their account, set **Billing status** to **Payment required**, and choose **Save profile**.
+
+Outside brokers can also open **Broker sign up** on the sign-in page (`/signup`). That form collects name, email, phone, optional brokerage, a password they choose, and acceptance of the broker terms (the acceptance time is stored). It always creates an outside broker with billing **Payment required** and does not set a temporary password. It never creates an administrator or a complimentary account, including for `@grinbergmanagement.com` addresses. Grinberg staff stay admin-created and free. When Stripe is configured, sign-up signs them in and sends them to the existing Checkout session (`STRIPE_PRICE_ID`, $100 USD per month). When Stripe is not configured, an active account can open the boards. The access desk marks these rows **Self sign-up**.
 7. To turn someone off, open their account and choose **Disable account** (blocks sign-in and ends sessions) or **Force logout** (ends sessions, account stays active). **Reset password** issues a new temporary password and ends sessions.
 
 Until `TURSO_DATABASE_URL` (or `DATABASE_URL`) is set, production shows the login page and does not serve listings.

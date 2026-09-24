@@ -3,9 +3,10 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { createClient, type Client } from "@libsql/client";
 import {
   databaseConfig,
+  isOfficeAccount,
   LAST_SEEN_WRITE_MS,
   SESSION_TTL_MS,
-} from "./config";
+} from "./config.ts";
 import type {
   AuthSession,
   BillingStatus,
@@ -14,9 +15,9 @@ import type {
   RequestMeta,
   Role,
   UserRecord,
-} from "./types";
-import { GRINBERG_ADMIN_EMAILS, isGrinbergAdminEmail } from "./staff";
-import { BILLING_STATUSES, ROLES } from "./types";
+} from "./types.ts";
+import { GRINBERG_ADMIN_EMAILS } from "./staff.ts";
+import { BILLING_STATUSES, ROLES } from "./types.ts";
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -35,7 +36,10 @@ const SCHEMA = [
     stripe_subscription_id TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    created_by TEXT
+    created_by TEXT,
+    phone TEXT,
+    terms_accepted_at TEXT,
+    self_signup INTEGER NOT NULL DEFAULT 0
   )`,
   `CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,
@@ -66,6 +70,20 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_login_events_email_time ON login_events (email, occurred_at)`,
   `CREATE INDEX IF NOT EXISTS idx_login_events_ip_time ON login_events (ip, occurred_at)`,
   `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id)`,
+  `CREATE TABLE IF NOT EXISTS signup_attempts (
+    id TEXT PRIMARY KEY,
+    occurred_at TEXT NOT NULL,
+    ip TEXT,
+    email TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_signup_attempts_ip_time ON signup_attempts (ip, occurred_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_signup_attempts_email_time ON signup_attempts (email, occurred_at)`,
+];
+
+const ADDED_USER_COLUMNS: { name: string; definition: string }[] = [
+  { name: "phone", definition: "TEXT" },
+  { name: "terms_accepted_at", definition: "TEXT" },
+  { name: "self_signup", definition: "INTEGER NOT NULL DEFAULT 0" },
 ];
 
 let client: Client | null = null;
@@ -102,15 +120,30 @@ export function ensureSchema(): Promise<void> {
   return schemaReady;
 }
 
+async function ensureUserColumns(db: Client): Promise<void> {
+  const info = await db.execute("PRAGMA table_info(users)");
+  const names = new Set(info.rows.map((row) => String(row.name)));
+  for (const column of ADDED_USER_COLUMNS) {
+    if (names.has(column.name)) continue;
+    await db.execute(`ALTER TABLE users ADD COLUMN ${column.name} ${column.definition}`);
+    names.add(column.name);
+  }
+}
+
 async function migrate(): Promise<void> {
   const db = getClient();
   for (const sql of SCHEMA) {
     await db.execute(sql);
   }
+  await ensureUserColumns(db);
   const cutoff = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString();
   await db.execute({
     sql: "DELETE FROM sessions WHERE expires_at < ? AND (revoked_at IS NOT NULL OR expires_at < ?)",
     args: [cutoff, cutoff],
+  });
+  await db.execute({
+    sql: "DELETE FROM signup_attempts WHERE occurred_at < ?",
+    args: [cutoff],
   });
 }
 
@@ -129,6 +162,9 @@ type UserRow = {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  phone: string | null;
+  terms_accepted_at: string | null;
+  self_signup: number | bigint | null;
 };
 
 function asRole(value: string): Role {
@@ -159,6 +195,9 @@ function mapUser(row: UserRow): UserRecord {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdBy: row.created_by,
+    phone: row.phone ?? null,
+    termsAcceptedAt: row.terms_accepted_at ?? null,
+    selfSignup: flag(row.self_signup),
   };
 }
 
@@ -177,6 +216,9 @@ export function toPublicUser(user: UserRecord): PublicUser {
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
     createdBy: user.createdBy,
+    phone: user.phone,
+    termsAcceptedAt: user.termsAcceptedAt,
+    selfSignup: user.selfSignup,
   };
 }
 
@@ -216,12 +258,15 @@ export async function insertUser(input: {
   email: string;
   name: string | null;
   company: string | null;
+  phone?: string | null;
   passwordHash: string;
   role: Role;
   active?: boolean;
   mustResetPassword?: boolean;
   billingStatus?: BillingStatus;
   createdBy?: string | null;
+  termsAcceptedAt?: string | null;
+  selfSignup?: boolean;
 }): Promise<UserRecord> {
   await ensureSchema();
   const now = new Date().toISOString();
@@ -229,8 +274,8 @@ export async function insertUser(input: {
   await getClient().execute({
     sql: `INSERT INTO users (
       id, email, name, company, password_hash, role, active, must_reset_password,
-      billing_status, created_at, updated_at, created_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      billing_status, created_at, updated_at, created_by, phone, terms_accepted_at, self_signup
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       id,
       input.email,
@@ -244,6 +289,9 @@ export async function insertUser(input: {
       now,
       now,
       input.createdBy ?? null,
+      input.phone ?? null,
+      input.termsAcceptedAt ?? null,
+      input.selfSignup ? 1 : 0,
     ],
   });
   const created = await findUserById(id);
@@ -286,6 +334,7 @@ export async function markGrinbergOfficeAccounts(): Promise<void> {
     sql: `UPDATE users
       SET role = 'admin', billing_status = 'complimentary', updated_at = ?
       WHERE email IN (${placeholders})
+        AND self_signup = 0
         AND (role <> 'admin' OR billing_status <> 'complimentary')`,
     args: [new Date().toISOString(), ...GRINBERG_ADMIN_EMAILS],
   });
@@ -319,7 +368,7 @@ export async function applyStripeBilling(input: {
     (input.subscriptionId ? await findUserByStripe("stripe_subscription_id", input.subscriptionId) : null) ??
     (input.customerId ? await findUserByStripe("stripe_customer_id", input.customerId) : null);
   if (!user) return false;
-  const billingStatus = isGrinbergAdminEmail(user.email) ? "complimentary" : input.billingStatus;
+  const billingStatus = isOfficeAccount(user) ? "complimentary" : input.billingStatus;
   await getClient().execute({
     sql: `UPDATE users
       SET billing_status = ?,
@@ -364,6 +413,30 @@ export async function countRecentFailures(input: {
     args: [input.sinceIso, value],
   });
   return Number(result.rows[0]?.n ?? 0);
+}
+
+export async function countRecentSignupAttempts(input: {
+  email?: string;
+  ip?: string;
+  sinceIso: string;
+}): Promise<number> {
+  await ensureSchema();
+  if (!input.email && !input.ip) return 0;
+  const column = input.email ? "email" : "ip";
+  const value = input.email ?? input.ip ?? "";
+  const result = await getClient().execute({
+    sql: `SELECT COUNT(*) AS n FROM signup_attempts WHERE occurred_at >= ? AND ${column} = ?`,
+    args: [input.sinceIso, value],
+  });
+  return Number(result.rows[0]?.n ?? 0);
+}
+
+export async function recordSignupAttempt(input: { ip: string; email: string | null }): Promise<void> {
+  await ensureSchema();
+  await getClient().execute({
+    sql: "INSERT INTO signup_attempts (id, occurred_at, ip, email) VALUES (?, ?, ?, ?)",
+    args: [randomUUID(), new Date().toISOString(), input.ip, input.email],
+  });
 }
 
 export async function recordLoginEvent(input: {
@@ -453,6 +526,7 @@ type SessionJoinRow = {
   active: number | bigint;
   must_reset_password: number | bigint;
   billing_status: string;
+  self_signup: number | bigint | null;
 };
 
 export async function readSession(token: string | undefined | null): Promise<AuthSession | null> {
@@ -471,7 +545,8 @@ export async function readSession(token: string | undefined | null): Promise<Aut
         u.role,
         u.active,
         u.must_reset_password,
-        u.billing_status
+        u.billing_status,
+        u.self_signup
       FROM sessions s
       JOIN users u ON u.id = s.user_id
       WHERE s.token_hash = ?`,
@@ -504,6 +579,7 @@ export async function readSession(token: string | undefined | null): Promise<Aut
     role: asRole(row.role),
     mustResetPassword: flag(row.must_reset_password),
     billingStatus: asBilling(row.billing_status),
+    selfSignup: flag(row.self_signup),
     expiresAt: row.expires_at,
   };
 }

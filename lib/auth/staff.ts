@@ -1,4 +1,4 @@
-export { GRINBERG_ADMIN_EMAILS, isGrinbergAdminEmail } from "./config";
+export { GRINBERG_ADMIN_EMAILS, isGrinbergAdminEmail, isOfficeAccount } from "./config.ts";
 
 /** Shown on Checkout. The charged amount is still STRIPE_PRICE_ID, not this sentence. */
 export const CHECKOUT_SUBMIT_MESSAGE =

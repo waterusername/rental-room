@@ -10,6 +10,7 @@ import {
   setUserPassword,
   updateBrokerProfile,
 } from "./db";
+import { isOfficeAccount } from "./config";
 import { requireAdmin } from "./guards";
 import { normalizeEmail, passwordError } from "./http";
 import { generateTemporaryPassword, hashPassword } from "./password";
@@ -78,12 +79,12 @@ export async function updateBrokerAction(_prev: ActionState, formData: FormData)
   if (!email) return { error: "Enter a valid email address." };
   const requested = parseBilling(String(formData.get("billingStatus") ?? ""));
   if (!requested) return { error: "Choose a billing status." };
-  if (isGrinbergAdminEmail(user.email) && email !== user.email) {
+  if (isOfficeAccount(user) && email !== user.email) {
     return { error: "A Grinberg office account keeps its email and is not billed." };
   }
   const other = await findUserByEmail(email);
   if (other && other.id !== user.id) return { error: "An account with that email already exists." };
-  const office = isGrinbergAdminEmail(email);
+  const office = isGrinbergAdminEmail(email) && !user.selfSignup;
   await updateBrokerProfile({
     id: user.id,
     email,
@@ -142,7 +143,7 @@ export async function createCheckoutLinkAction(_prev: ActionState, formData: For
   await requireAdmin();
   const id = String(formData.get("userId") ?? "");
   const user = await findUserById(id);
-  if (!user || user.role !== "broker" || isGrinbergAdminEmail(user.email)) {
+  if (!user || user.role !== "broker" || isOfficeAccount(user)) {
     return { error: "Checkout links are for outside brokers. Grinberg office accounts are complimentary." };
   }
   try {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { PasswordForm } from "@/components/auth/PasswordForm";
 import { requireUser } from "@/lib/auth/guards";
 import { safeNextPath } from "@/lib/auth/http";
+import { PASSWORD_HINT } from "@/lib/auth/password-rules";
 
 export const metadata: Metadata = {
   title: "Change password",
@@ -23,7 +24,7 @@ export default async function PasswordPage({
       <p className="mt-3 text-sm leading-6 text-muted">
         {session.mustResetPassword
           ? "Choose a new password before opening the vacancy boards. Use the temporary password you were given as the current password."
-          : "Use at least 10 characters. Other sessions on this account are signed out."}
+          : `${PASSWORD_HINT} Other sessions on this account are signed out.`}
       </p>
       <PasswordForm nextPath={nextPath} />
     </>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { BrokerDisclosure } from "@/components/BrokerDisclosure";
 import { adminEnvWarning, databaseConfig } from "@/lib/auth/config";
@@ -44,6 +45,16 @@ export default async function LoginPage({
         <p className="mt-4 rounded-md border border-tan-border bg-tan-soft px-3 py-2 text-sm text-tan">{adminWarning}</p>
       ) : null}
       <LoginForm nextPath={nextPath === "/" ? "" : nextPath} />
+      <div className="mt-4 rounded-lg border border-line bg-panel p-6 text-center shadow-[var(--shadow)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent">Broker sign up</p>
+        <p className="mt-2 text-sm leading-6 text-muted">Outside brokers can create an account and subscribe for access.</p>
+        <Link
+          href={nextPath === "/" ? "/signup" : `/signup?next=${encodeURIComponent(nextPath)}`}
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-accent bg-white px-4 text-sm font-semibold text-accent no-underline hover:bg-accent-soft"
+        >
+          Create broker account
+        </Link>
+      </div>
     </div>
   );
 }

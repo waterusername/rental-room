@@ -23,6 +23,7 @@ export type PublicUser = {
   email: string;
   name: string | null;
   company: string | null;
+  phone: string | null;
   role: Role;
   active: boolean;
   mustResetPassword: boolean;
@@ -32,6 +33,8 @@ export type PublicUser = {
   createdAt: string;
   updatedAt: string;
   createdBy: string | null;
+  termsAcceptedAt: string | null;
+  selfSignup: boolean;
 };
 
 export type UserRecord = PublicUser & {
@@ -47,6 +50,7 @@ export type AuthSession = {
   role: Role;
   mustResetPassword: boolean;
   billingStatus: BillingStatus;
+  selfSignup: boolean;
   expiresAt: string;
 };
 
@@ -66,6 +70,7 @@ export type ActionState = {
   ok?: string;
   tempPassword?: string;
   checkoutUrl?: string;
+  emailTaken?: boolean;
 } | null;
 
 export type LoginHistoryRow = {

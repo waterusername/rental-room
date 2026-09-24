@@ -29,7 +29,8 @@ export default async function AdminHomePage() {
       <p className="mt-4 max-w-3xl text-sm leading-6 text-muted">
         Times are UTC. Each successful sign-in stores the account, time, IP address, browser, and a short fingerprint of
         the browser plus language. Share-risk badges are heuristics for credential sharing. Disable the account or end
-        its sessions from the account page.
+        its sessions from the account page. Brokers who use Broker sign up are marked Self sign-up. That path creates an
+        outside broker on Payment required, including Grinberg email addresses, and never a complimentary administrator.
       </p>
       {dashboard.stripeOn ? (
         <p className="mt-4 max-w-3xl rounded-md border border-accent-border bg-accent-soft px-3 py-2 text-sm text-accent">

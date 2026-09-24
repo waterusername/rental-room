@@ -1,12 +1,16 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   databaseConfig,
   FAILURE_WINDOW_MS,
+  isOfficeAccount,
   MAX_FAILURES_PER_EMAIL,
   MAX_FAILURES_PER_IP,
+  MAX_SIGNUPS_PER_EMAIL,
+  MAX_SIGNUPS_PER_IP,
   paymentsEnforced,
   postLoginPath,
   SESSION_COOKIE,
@@ -14,10 +18,13 @@ import {
 } from "./config";
 import {
   countRecentFailures,
+  countRecentSignupAttempts,
   createSession,
   findUserByEmail,
   findUserById,
+  insertUser,
   recordLoginEvent,
+  recordSignupAttempt,
   revokeOtherSessions,
   revokeSessionByToken,
   setUserPassword,
@@ -26,7 +33,7 @@ import { requireUser } from "./guards";
 import { normalizeEmail, passwordError, requestMeta, safeNextPath } from "./http";
 import { hashPassword, verifyPassword } from "./password";
 import { ensureAdminSeed } from "./seed";
-import { isGrinbergAdminEmail } from "./staff";
+import { parseSignupForm, selfSignupRecord } from "./signup";
 import { createCheckoutUrl } from "./stripe";
 import type { ActionState, LoginState } from "./types";
 
@@ -87,6 +94,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       role: user.role,
       billingStatus: user.billingStatus,
       email: user.email,
+      selfSignup: user.selfSignup,
       nextPath,
       stripeOn: paymentsEnforced(),
     }),
@@ -131,10 +139,106 @@ export async function changePasswordAction(_prev: ActionState, formData: FormDat
       role: user.role,
       billingStatus: user.billingStatus,
       email: user.email,
+      selfSignup: user.selfSignup,
       nextPath,
       stripeOn: paymentsEnforced(),
     }),
   );
+}
+
+const EMAIL_TAKEN = "An account with this email already exists.";
+
+export async function signupAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const parsed = parseSignupForm(formData);
+  if (!parsed.ok) {
+    if (parsed.honeypot && databaseConfig()) {
+      try {
+        const meta = requestMeta(await headers());
+        await recordSignupAttempt({ ip: meta.ip, email: null });
+      } catch (error) {
+        console.error("Sign-up attempt was not recorded", error instanceof Error ? error.message : "unknown");
+      }
+    }
+    return { error: parsed.error };
+  }
+  if (!databaseConfig()) {
+    return { error: "Sign-up is unavailable until the access database is configured." };
+  }
+
+  const nextPath = safeNextPath(String(formData.get("next") ?? ""));
+  try {
+    const meta = requestMeta(await headers());
+    const since = new Date(Date.now() - FAILURE_WINDOW_MS).toISOString();
+    const [emailAttempts, ipAttempts] = await Promise.all([
+      countRecentSignupAttempts({ email: parsed.email, sinceIso: since }),
+      countRecentSignupAttempts({ ip: meta.ip, sinceIso: since }),
+    ]);
+    if (emailAttempts >= MAX_SIGNUPS_PER_EMAIL || ipAttempts >= MAX_SIGNUPS_PER_IP) {
+      return { error: "Too many sign-up attempts. Try again in a few minutes." };
+    }
+    await recordSignupAttempt({ ip: meta.ip, email: parsed.email });
+
+    const existing = await findUserByEmail(parsed.email);
+    if (existing) return { error: EMAIL_TAKEN, emailTaken: true };
+
+    const created = await insertUser(
+      selfSignupRecord({
+        email: parsed.email,
+        name: parsed.name,
+        phone: parsed.phone,
+        company: parsed.company,
+        passwordHash: await hashPassword(parsed.password),
+        termsAcceptedAt: new Date().toISOString(),
+      }),
+    );
+    const session = await createSession(created.id, meta);
+    const jar = await cookies();
+    jar.set(SESSION_COOKIE, session.token, sessionCookie(Math.floor(SESSION_TTL_MS / 1000)));
+    revalidatePath("/admin");
+
+    const stripeOn = paymentsEnforced();
+    if (stripeOn) {
+      try {
+        const url = await createCheckoutUrl(created);
+        redirect(url);
+      } catch (error) {
+        if (isRedirect(error)) throw error;
+        console.error("Checkout failed", error instanceof Error ? error.message : "unknown");
+        redirect("/account/billing");
+      }
+    }
+
+    redirect(
+      postLoginPath({
+        mustResetPassword: false,
+        role: created.role,
+        billingStatus: created.billingStatus,
+        email: created.email,
+        selfSignup: true,
+        nextPath,
+        stripeOn,
+      }),
+    );
+  } catch (error) {
+    if (isRedirect(error)) throw error;
+    if (await emailAlreadyExists(parsed.email, error)) return { error: EMAIL_TAKEN, emailTaken: true };
+    console.error("Sign-up failed", error instanceof Error ? error.message : "unknown");
+    return { error: "The access database is not reachable." };
+  }
+}
+
+async function emailAlreadyExists(email: string, error: unknown): Promise<boolean> {
+  if (!isUniqueConstraint(error)) return false;
+  try {
+    return Boolean(await findUserByEmail(email));
+  } catch {
+    return true;
+  }
+}
+
+function isUniqueConstraint(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : "";
+  return /unique constraint failed/i.test(message) || message.includes("SQLITE_CONSTRAINT");
 }
 
 export async function startMyCheckout(prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -142,12 +246,12 @@ export async function startMyCheckout(prev: ActionState, formData: FormData): Pr
   void formData;
   const session = await requireUser();
   if (session.mustResetPassword) redirect("/account/password");
-  if (isGrinbergAdminEmail(session.email)) {
-    return { error: "Grinberg office accounts are complimentary and are not billed." };
-  }
-  if (session.role === "admin") redirect("/admin");
   const user = await findUserById(session.userId);
   if (!user || !user.active) return { error: "This account cannot start checkout." };
+  if (isOfficeAccount(user)) {
+    return { error: "Grinberg office accounts are complimentary and are not billed." };
+  }
+  if (user.role === "admin") redirect("/admin");
   try {
     const url = await createCheckoutUrl(user);
     redirect(url);

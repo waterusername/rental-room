@@ -7,8 +7,7 @@ import { requireAdmin } from "@/lib/auth/guards";
 import { formatUtc, summarizeUserAgent } from "@/lib/auth/http";
 import { SHARE_RULES } from "@/lib/auth/share-risk";
 import { loadBrokerDetail } from "@/lib/auth/stats";
-import { paymentsEnforced } from "@/lib/auth/config";
-import { isGrinbergAdminEmail } from "@/lib/auth/staff";
+import { isOfficeAccount, paymentsEnforced } from "@/lib/auth/config";
 import { BILLING_LABEL } from "@/lib/auth/types";
 
 export const metadata: Metadata = {
@@ -21,7 +20,7 @@ export default async function BrokerDetailPage({ params }: { params: Promise<{ i
   const [admin, detail] = await Promise.all([requireAdmin(), loadBrokerDetail(id)]);
   if (!detail) notFound();
   const { user } = detail;
-  const officeAccount = isGrinbergAdminEmail(user.email);
+  const officeAccount = isOfficeAccount(user);
 
   return (
     <>
@@ -38,10 +37,14 @@ export default async function BrokerDetailPage({ params }: { params: Promise<{ i
         <Chip tone={user.billingStatus === "active_paid" || user.billingStatus === "complimentary" ? "ok" : "wait"}>
           {BILLING_LABEL[user.billingStatus]}
         </Chip>
+        {user.selfSignup ? <Chip tone="neutral">Self sign-up</Chip> : null}
         {detail.flags.length > 0 ? <Chip tone="alert">Possible shared login</Chip> : null}
       </div>
 
       <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Source" value={user.selfSignup ? "Self sign-up" : "Access desk"} />
+        <Stat label="Phone" value={user.phone || "—"} />
+        <Stat label="Terms accepted" value={formatUtc(user.termsAcceptedAt)} />
         <Stat label="Created" value={formatUtc(user.createdAt)} />
         <Stat label="Total sign-ins" value={String(detail.totalLogins)} />
         <Stat label="Last sign-in" value={formatUtc(detail.lastLoginAt)} />

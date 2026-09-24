@@ -1,7 +1,7 @@
 import Stripe from "stripe";
-import { mapStripeSubscriptionStatus } from "./config";
+import { isOfficeAccount, mapStripeSubscriptionStatus } from "./config";
 import { applyStripeBilling, findUserById } from "./db";
-import { CHECKOUT_SUBMIT_MESSAGE, isGrinbergAdminEmail } from "./staff";
+import { CHECKOUT_SUBMIT_MESSAGE } from "./staff";
 import type { BillingStatus, PublicUser } from "./types";
 
 let stripeClient: Stripe | null = null;
@@ -24,13 +24,15 @@ export async function appBaseUrl(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-export async function createCheckoutUrl(user: Pick<PublicUser, "id" | "email" | "stripeCustomerId">): Promise<string> {
+export async function createCheckoutUrl(
+  user: Pick<PublicUser, "id" | "email" | "stripeCustomerId"> & { selfSignup?: boolean },
+): Promise<string> {
   const stripe = getStripe();
   const price = process.env.STRIPE_PRICE_ID?.trim();
   if (!stripe || !price) {
     throw new Error("Stripe is not configured. Set STRIPE_SECRET_KEY and STRIPE_PRICE_ID.");
   }
-  if (isGrinbergAdminEmail(user.email)) {
+  if (isOfficeAccount(user)) {
     throw new Error("Grinberg office accounts are complimentary and are not billed.");
   }
   const base = await appBaseUrl();
@@ -114,7 +116,7 @@ function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
 
 export async function checkoutForUserId(userId: string): Promise<string> {
   const user = await findUserById(userId);
-  if (!user || user.role !== "broker" || isGrinbergAdminEmail(user.email)) {
+  if (!user || user.role !== "broker" || isOfficeAccount(user)) {
     throw new Error("Checkout is only for outside brokers. Grinberg office accounts are complimentary.");
   }
   return createCheckoutUrl(user);
