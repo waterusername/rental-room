@@ -33,3 +33,10 @@ export function floorPlansFor(
   }
   return found;
 }
+
+export function listingSqft(listing: Pick<Listing, "address" | "unit" | "tours">): number | null {
+  for (const plan of floorPlansFor(listing)) {
+    if (plan.sqft != null) return plan.sqft;
+  }
+  return null;
+}
