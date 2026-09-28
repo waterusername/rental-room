@@ -125,7 +125,7 @@ export function UnitDetail({
           <h2 id="exterior-heading" className="font-serif text-2xl font-semibold">
             Building exterior
           </h2>
-          <figure className="mt-4 max-w-3xl overflow-hidden rounded-lg border border-line bg-panel shadow-[var(--shadow)]">
+          <figure className="mt-4 max-w-xl overflow-hidden rounded-lg border border-line bg-panel shadow-[var(--shadow)]">
             <div className="relative aspect-[16/10] bg-panel-2">
               {direct ? (
                 // The optimizer URL is session-gated. This src carries the share token instead.
@@ -143,7 +143,7 @@ export function UnitDetail({
                   fill
                   className="object-cover"
                   style={{ objectPosition: photo.objectPosition ?? "center" }}
-                  sizes="(min-width: 768px) 768px, 100vw"
+                  sizes="576px"
                 />
               )}
             </div>
