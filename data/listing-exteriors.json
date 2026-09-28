@@ -259,6 +259,13 @@
       "alt": "Exterior of 15 and 17 Orinoco Place, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 40%"
+    },
+    "apt-402-404-jersey-street-unit-2f": {
+      "src": "/exteriors/apt-402-404-jersey-street-unit-2f.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 402-404 Jersey Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
     }
   }
 }
