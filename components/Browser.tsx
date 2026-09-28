@@ -65,7 +65,9 @@ export function Browser({
           No listings match these filters.
         </p>
       ) : (
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <ul
+          className={`mt-4 grid gap-4 sm:gap-5 ${variant === "apartment" ? "md:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-3"}`}
+        >
           {shown.map((listing) => (
             <ListingCard key={listing.id} listing={listing} photo={photos[listing.id] ?? null} />
           ))}
