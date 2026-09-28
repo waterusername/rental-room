@@ -1,3 +1,4 @@
+import { UnitFooterLearnMore } from "@/components/UnitFooterLearnMore";
 import { inventory } from "@/lib/inventory";
 import { isNamedPersonPhone, telHref } from "@/lib/format";
 
@@ -6,7 +7,10 @@ export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-line bg-panel">
       <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 md:grid-cols-[1.4fr_1fr]">
-        <p className="max-w-xl text-sm leading-6 text-muted">Equal Housing Opportunity.</p>
+        <div className="max-w-xl">
+          <p className="text-sm leading-6 text-muted">Equal Housing Opportunity.</p>
+          <UnitFooterLearnMore />
+        </div>
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Apply</h2>
           <a className="mt-2 inline-block font-semibold text-accent" href={`mailto:${contact.applyEmail}`}>

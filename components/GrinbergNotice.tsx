@@ -27,11 +27,6 @@ export function GrinbergNotice({ className = "" }: { className?: string }) {
         <li>Homes are renovated above the typical affordable-housing standard, with durable finishes.</li>
       </ul>
       <p className="mt-3 text-xs leading-5 text-muted">Equal Housing Opportunity.</p>
-      <p className="mt-2 text-sm leading-6">
-        <a href="https://www.grinbergmanagement.com/the-difference" className="font-semibold text-accent">
-          Learn more at grinbergmanagement.com
-        </a>
-      </p>
     </section>
   );
 }
