@@ -1,7 +1,7 @@
 import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 
-const PUBLIC_IMAGE = /^\/(street-view|layouts)\/([A-Za-z0-9._-]+)$/;
+const PUBLIC_IMAGE = /^\/(street-view|layouts|exteriors)\/([A-Za-z0-9._-]+)$/;
 
 export function resolvePublicAsset(src: string, publicRoot = path.resolve(process.cwd(), "public")): string | null {
   const parsed = parsePublicImage(src);
@@ -29,12 +29,16 @@ export function imageContentType(filePath: string): string | null {
   }
 }
 
-function parsePublicImage(src: string): { folder: "street-view" | "layouts"; name: string } | null {
+const IMAGE_FOLDERS = ["street-view", "layouts", "exteriors"] as const;
+type ImageFolder = (typeof IMAGE_FOLDERS)[number];
+
+function parsePublicImage(src: string): { folder: ImageFolder; name: string } | null {
   const match = PUBLIC_IMAGE.exec(src);
   if (!match) return null;
   const name = match[2] ?? "";
-  if (!name || name === "." || name === "..") return null;
-  return { folder: match[1] === "layouts" ? "layouts" : "street-view", name };
+  const folder = IMAGE_FOLDERS.find((item) => item === match[1]);
+  if (!folder || !name || name === "." || name === "..") return null;
+  return { folder, name };
 }
 
 async function readScoped(dir: string, name: string): Promise<{ body: Buffer; contentType: string } | null> {
@@ -64,6 +68,9 @@ export async function readPublicImage(
   if (scopedRoot === path.resolve(process.cwd(), "public")) {
     if (parsed.folder === "street-view") {
       return readScoped(path.join(process.cwd(), "public", "street-view"), parsed.name);
+    }
+    if (parsed.folder === "exteriors") {
+      return readScoped(path.join(process.cwd(), "public", "exteriors"), parsed.name);
     }
     return readScoped(path.join(process.cwd(), "public", "layouts"), parsed.name);
   }

@@ -5,18 +5,24 @@ import path from "node:path";
 import test from "node:test";
 import { readPublicImage, resolvePublicAsset } from "./public-asset.ts";
 
-test("public asset reads stay inside street-view and layouts", async () => {
+test("public asset reads stay inside street-view, layouts, and exteriors", async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rr-asset-"));
   const root = path.join(dir, "public");
   fs.mkdirSync(path.join(root, "street-view"), { recursive: true });
   fs.mkdirSync(path.join(root, "layouts"), { recursive: true });
+  fs.mkdirSync(path.join(root, "exteriors"), { recursive: true });
   fs.writeFileSync(path.join(root, "street-view", "344-targee-street.jpg"), "jpeg");
   fs.writeFileSync(path.join(root, "layouts", "plan.png"), "png");
+  fs.writeFileSync(path.join(root, "exteriors", "apt-124-alaska-st-unit-2-bsmt.jpg"), "jpeg");
   fs.writeFileSync(path.join(dir, "secret.txt"), "nope");
 
   try {
     assert.equal(resolvePublicAsset("/street-view/344-targee-street.jpg", root)?.endsWith("344-targee-street.jpg"), true);
     assert.equal(resolvePublicAsset("/layouts/plan.png", root)?.endsWith("plan.png"), true);
+    assert.equal(
+      resolvePublicAsset("/exteriors/apt-124-alaska-st-unit-2-bsmt.jpg", root)?.endsWith("apt-124-alaska-st-unit-2-bsmt.jpg"),
+      true,
+    );
     assert.equal(resolvePublicAsset("/street-view/../secret.txt", root), null);
     assert.equal(resolvePublicAsset("/units/apt-344-targee-street-unit-1b", root), null);
     assert.equal(resolvePublicAsset("/admin", root), null);
@@ -27,7 +33,11 @@ test("public asset reads stay inside street-view and layouts", async () => {
     assert.equal(photo?.body.toString(), "jpeg");
     const plan = await readPublicImage("/layouts/plan.png", root);
     assert.equal(plan?.contentType, "image/png");
+    const exterior = await readPublicImage("/exteriors/apt-124-alaska-st-unit-2-bsmt.jpg", root);
+    assert.equal(exterior?.contentType, "image/jpeg");
+    assert.equal(exterior?.body.toString(), "jpeg");
     assert.equal(await readPublicImage("/street-view/missing.jpg", root), null);
+    assert.equal(await readPublicImage("/exteriors/../secret.txt", root), null);
 
     fs.writeFileSync(path.join(root, "street-view", "notes.txt"), "text");
     assert.equal(await readPublicImage("/street-view/notes.txt", root), null);
