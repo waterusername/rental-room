@@ -245,6 +245,20 @@
       "alt": "Exterior of 1 Coonley Court, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 38%"
+    },
+    "apt-15-orinoco-place-unit-2": {
+      "src": "/exteriors/orinoco-15-17-shared.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 15 and 17 Orinoco Place, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
+    },
+    "apt-17-orinoco-place-unit-1": {
+      "src": "/exteriors/orinoco-15-17-shared.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 15 and 17 Orinoco Place, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
     }
   }
 }
