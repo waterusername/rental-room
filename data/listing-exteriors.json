@@ -70,6 +70,111 @@
       "alt": "Exterior of 122 Targee Street, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 32%"
+    },
+    "apt-230-benziger-ave-1": {
+      "src": "/exteriors/apt-230-benziger-ave.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 230 Benziger Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-230-benziger-ave-unit-2": {
+      "src": "/exteriors/apt-230-benziger-ave.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 230 Benziger Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-28-alaska-street-unit-1": {
+      "src": "/exteriors/apt-28-alaska-street.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 28 Alaska Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-28-alaska-street-unit-2": {
+      "src": "/exteriors/apt-28-alaska-street.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 28 Alaska Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-163-brighton-ave-unit-1": {
+      "src": "/exteriors/apt-163-brighton-ave-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 163 Brighton Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-21-stanley-avenue-unit-1": {
+      "src": "/exteriors/apt-21-stanley-avenue-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 21 Stanley Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-344-targee-street-unit-1b": {
+      "src": "/exteriors/apt-344-targee-street-unit-1b.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 344 Targee Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-35c-langere-pl-unit-d": {
+      "src": "/exteriors/apt-35c-langere-pl-unit-d.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 35C Langere Pl, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-36-grove-avenue-unit-1": {
+      "src": "/exteriors/apt-36-grove-avenue-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 36 Grove Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-390-st-marks-place-1": {
+      "src": "/exteriors/apt-390-st-marks-place-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 390 St Marks Place, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-43-trumbull-pl-unit-1": {
+      "src": "/exteriors/apt-43-trumbull-pl-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 43 Trumbull PL, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-434-port-richmond-ave-unit-2f": {
+      "src": "/exteriors/apt-434-port-richmond-ave-unit-2f.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 434 Port Richmond Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-663-bay-street-unit-2": {
+      "src": "/exteriors/apt-663-bay-street-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 663 Bay Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-79-clark-lane-unit-2": {
+      "src": "/exteriors/apt-79-clark-lane-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 79 Clark Lane, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-91-taft-avenue-unit-2": {
+      "src": "/exteriors/apt-91-taft-avenue-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 91 Taft Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
     }
   }
 }
