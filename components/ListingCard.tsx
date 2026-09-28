@@ -1,7 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Chip } from "./Chip";
 import {
+  bathCount,
+  bedCount,
   formatDate,
   rentSummary,
   statusLabel,
@@ -19,6 +24,7 @@ export function ListingCard({
   photo: ExteriorPhoto | null;
 }) {
   const name = `${listing.address}, ${unitLabel(listing.unit)}`;
+  const [photoHover, setPhotoHover] = useState(false);
   return (
     <li>
       <Link
@@ -26,18 +32,33 @@ export function ListingCard({
         className={`flex h-full flex-col overflow-hidden rounded-lg border border-line bg-panel text-ink no-underline shadow-[var(--shadow)] transition hover:border-accent-border hover:bg-accent-soft/40 ${photo ? "" : "p-4"}`}
       >
         {photo ? (
-          <div className="relative aspect-[16/10] bg-panel-2">
+          <div
+            className="relative aspect-square bg-panel-2"
+            onMouseEnter={() => setPhotoHover(true)}
+            onMouseLeave={() => setPhotoHover(false)}
+          >
             <Image
               src={photo.src}
               alt={photo.alt}
               fill
               className="object-cover"
               style={{ objectPosition: photo.objectPosition ?? "center" }}
-              sizes="(min-width: 1280px) 360px, (min-width: 640px) 50vw, 100vw"
+              sizes="(min-width: 768px) 560px, 100vw"
             />
-            <span className="absolute bottom-2 left-2 rounded-full bg-[#1b3a31]/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+            <span
+              className={`absolute bottom-3 left-3 z-10 rounded-full bg-[#1b3a31]/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition-opacity ${photoHover ? "opacity-0" : "opacity-100"}`}
+            >
               {photo.kind === "map" ? "Map" : "Exterior"}
             </span>
+            <div
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-end bg-[#142820]/80 p-5 text-white transition-opacity duration-150 ${photoHover ? "opacity-100" : "opacity-0"}`}
+            >
+              <p className="font-serif text-2xl font-semibold leading-tight tracking-tight">{listing.address}</p>
+              <p className="mt-2 text-sm">{unitLabel(listing.unit)}</p>
+              <p className="mt-1 text-sm">{listing.zip ?? "Zip not listed"}</p>
+              <p className="mt-3 text-sm font-semibold leading-5">{bedBathLine(listing)}</p>
+            </div>
           </div>
         ) : null}
         <div className={photo ? "flex flex-1 flex-col p-4" : "contents"}>
@@ -69,4 +90,15 @@ export function ListingCard({
       </Link>
     </li>
   );
+}
+
+function bedBathLine(listing: Listing): string {
+  const beds = bedCount(listing);
+  const baths = bathCount(listing);
+  const parts: string[] = [];
+  if (beds === 0) parts.push("Studio");
+  else if (beds != null) parts.push(beds === 1 ? "1 bedroom" : `${beds} bedrooms`);
+  if (baths != null) parts.push(baths === 1 ? "1 bathroom" : `${baths} bathrooms`);
+  if (listing.unitType) parts.push(listing.unitType);
+  return parts.join(" · ") || "Bedrooms and bathrooms not listed";
 }

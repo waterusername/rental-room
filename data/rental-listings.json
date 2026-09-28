@@ -1110,31 +1110,6 @@
         "notes": null
       },
       {
-        "id": "apt-240-benziger-ave-unit-1",
-        "category": "apartment",
-        "address": "240 Benziger Ave",
-        "unit": "Unit 1",
-        "unitType": "7B/1.5BA",
-        "minRent": 4000,
-        "targetRent": null,
-        "potentialRent": null,
-        "zip": null,
-        "status": "Under Initial Development",
-        "nycha": "YES",
-        "hpdTrustFund": "YES",
-        "utilitiesIncluded": "NO",
-        "washerDryer": "NO",
-        "tourReady": "NO",
-        "tours": [],
-        "officeNotes": null,
-        "reservationDate": null,
-        "daysSinceReservation": null,
-        "bedrooms": null,
-        "baths": null,
-        "prospect": null,
-        "notes": null
-      },
-      {
         "id": "apt-230-benziger-ave-unit-2",
         "category": "apartment",
         "address": "230 Benziger Ave",
@@ -1164,7 +1139,33 @@
     "garages": [],
     "storages": [],
     "pipeline": [],
-    "reserved": [],
+    "reserved": [
+      {
+        "id": "apt-240-benziger-ave-unit-1",
+        "category": "apartment",
+        "address": "240 Benziger Ave",
+        "unit": "Unit 1",
+        "unitType": "7B/1.5BA",
+        "minRent": 4000,
+        "targetRent": null,
+        "potentialRent": null,
+        "zip": null,
+        "status": "RESERVED",
+        "nycha": "YES",
+        "hpdTrustFund": "YES",
+        "utilitiesIncluded": "NO",
+        "washerDryer": "NO",
+        "tourReady": "NO",
+        "tours": [],
+        "officeNotes": null,
+        "reservationDate": null,
+        "daysSinceReservation": null,
+        "bedrooms": null,
+        "baths": null,
+        "prospect": null,
+        "notes": null
+      }
+    ],
     "residentialTracker": []
   }
 }

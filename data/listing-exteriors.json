@@ -125,14 +125,14 @@
       "kind": "photo",
       "alt": "Exterior of 35C Langere Pl, Staten Island",
       "credit": "Building exterior",
-      "objectPosition": "center 36%"
+      "objectPosition": "center 40%"
     },
     "apt-36-grove-avenue-unit-1": {
       "src": "/exteriors/apt-36-grove-avenue-unit-1.jpg",
       "kind": "photo",
       "alt": "Exterior of 36 Grove Avenue, Staten Island",
       "credit": "Building exterior",
-      "objectPosition": "center 36%"
+      "objectPosition": "center 35%"
     },
     "apt-390-st-marks-place-1": {
       "src": "/exteriors/apt-390-st-marks-place-1.jpg",
@@ -160,7 +160,7 @@
       "kind": "photo",
       "alt": "Exterior of 663 Bay Street, Staten Island",
       "credit": "Building exterior",
-      "objectPosition": "center 36%"
+      "objectPosition": "center 40%"
     },
     "apt-79-clark-lane-unit-2": {
       "src": "/exteriors/apt-79-clark-lane-unit-2.jpg",
@@ -196,6 +196,76 @@
       "alt": "Exterior of 27 Winter Avenue, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 36%"
+    },
+    "apt-128-port-richmond-ave-unir-3a": {
+      "src": "/exteriors/apt-128-port-richmond-ave-unir-3a.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 128 Port Richmond Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
+    },
+    "apt-132-hendricks-avenue-unit-2": {
+      "src": "/exteriors/apt-132-hendricks-avenue-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 132 Hendricks Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-9-baltc-ave-unit-3": {
+      "src": "/exteriors/apt-9-baltc-ave-unit-3.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 9 Baltc Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-627-cary-avenue-unit-1": {
+      "src": "/exteriors/apt-627-cary-avenue-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 627 Cary Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
+    },
+    "apt-863-post-ave-unit-1": {
+      "src": "/exteriors/apt-863-post-ave-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 863 Post Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 38%"
+    },
+    "apt-65-macormac-place-unit-2-basement": {
+      "src": "/exteriors/apt-65-macormac-place-unit-2-basement.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 65 Macormac Place, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 42%"
+    },
+    "apt-1-coonley-court-unit-1": {
+      "src": "/exteriors/apt-1-coonley-court-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 1 Coonley Court, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 38%"
+    },
+    "apt-15-orinoco-place-unit-2": {
+      "src": "/exteriors/orinoco-15-17-shared.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 15 and 17 Orinoco Place, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
+    },
+    "apt-17-orinoco-place-unit-1": {
+      "src": "/exteriors/orinoco-15-17-shared.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 15 and 17 Orinoco Place, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
+    },
+    "apt-402-404-jersey-street-unit-2f": {
+      "src": "/exteriors/apt-402-404-jersey-street-unit-2f.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 402-404 Jersey Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
     }
   }
 }
