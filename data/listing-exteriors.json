@@ -21,6 +21,20 @@
       "alt": "Exterior of 111 Osgood Avenue, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 22%"
+    },
+    "apt-38-barker-street-unit-1": {
+      "src": "/exteriors/apt-38-barker-street.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 38 Barker Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 38%"
+    },
+    "apt-38-barker-street-unit-2": {
+      "src": "/exteriors/apt-38-barker-street.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 38 Barker Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 38%"
     }
   }
 }
