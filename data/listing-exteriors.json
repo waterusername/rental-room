@@ -49,6 +49,13 @@
       "alt": "Exterior of 305 and 307 Gordon Street, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 40%"
+    },
+    "apt-310-york-avenue-unit-2": {
+      "src": "/exteriors/apt-310-york-avenue-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 310 York Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 42%"
     }
   }
 }
