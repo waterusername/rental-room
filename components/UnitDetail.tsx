@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { GrinbergNotice } from "@/components/GrinbergNotice";
 import { TourViewer } from "@/components/TourViewer";
 import {
   applyHref,
@@ -53,6 +54,8 @@ export function UnitDetail({
         {listing.unitType ? ` · ${listing.unitType}` : ""}
       </p>
       {notice}
+
+      <GrinbergNotice className="mt-6" />
 
       <section className="mt-6" aria-labelledby="tour-heading">
         <h2 id="tour-heading" className="font-serif text-2xl font-semibold">
