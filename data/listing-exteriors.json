@@ -196,6 +196,13 @@
       "alt": "Exterior of 27 Winter Avenue, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 36%"
+    },
+    "apt-128-port-richmond-ave-unir-3a": {
+      "src": "/exteriors/apt-128-port-richmond-ave-unir-3a.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 128 Port Richmond Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
     }
   }
 }
