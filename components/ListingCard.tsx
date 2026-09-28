@@ -44,7 +44,7 @@ export function ListingCard({
             </span>
             <div
               aria-hidden="true"
-              className="unit-facts-overlay pointer-events-none absolute inset-0 z-20 flex flex-col justify-center bg-[#142820]/92 p-5 text-white opacity-0 transition-opacity duration-150"
+              className="unit-facts-overlay pointer-events-none absolute inset-0 z-20 flex flex-col justify-center bg-[#142820]/40 p-5 text-white opacity-0 transition-opacity duration-150 [text-shadow:0_1px_2px_rgb(0_0_0/0.85)]"
             >
               <p className="font-serif text-2xl font-semibold leading-tight tracking-tight">{listing.address}</p>
               <p className="mt-2 text-sm">{unitLabel(listing.unit)}</p>
