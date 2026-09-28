@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Chip } from "./Chip";
@@ -21,6 +24,7 @@ export function ListingCard({
   photo: ExteriorPhoto | null;
 }) {
   const name = `${listing.address}, ${unitLabel(listing.unit)}`;
+  const [photoHover, setPhotoHover] = useState(false);
   return (
     <li>
       <Link
@@ -28,7 +32,11 @@ export function ListingCard({
         className={`flex h-full flex-col overflow-hidden rounded-lg border border-line bg-panel text-ink no-underline shadow-[var(--shadow)] transition hover:border-accent-border hover:bg-accent-soft/40 ${photo ? "" : "p-4"}`}
       >
         {photo ? (
-          <div className="group/photo relative aspect-square bg-panel-2">
+          <div
+            className="relative aspect-square bg-panel-2"
+            onMouseEnter={() => setPhotoHover(true)}
+            onMouseLeave={() => setPhotoHover(false)}
+          >
             <Image
               src={photo.src}
               alt={photo.alt}
@@ -37,12 +45,14 @@ export function ListingCard({
               style={{ objectPosition: photo.objectPosition ?? "center" }}
               sizes="(min-width: 768px) 560px, 100vw"
             />
-            <span className="absolute bottom-3 left-3 rounded-full bg-[#1b3a31]/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition-opacity group-hover/photo:opacity-0">
+            <span
+              className={`absolute bottom-3 left-3 z-10 rounded-full bg-[#1b3a31]/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition-opacity ${photoHover ? "opacity-0" : "opacity-100"}`}
+            >
               {photo.kind === "map" ? "Map" : "Exterior"}
             </span>
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute inset-0 flex flex-col justify-end bg-[#142820]/80 p-5 text-white opacity-0 transition-opacity duration-150 group-hover/photo:opacity-100"
+              className={`pointer-events-none absolute inset-0 z-10 flex flex-col justify-end bg-[#142820]/80 p-5 text-white transition-opacity duration-150 ${photoHover ? "opacity-100" : "opacity-0"}`}
             >
               <p className="font-serif text-2xl font-semibold leading-tight tracking-tight">{listing.address}</p>
               <p className="mt-2 text-sm">{unitLabel(listing.unit)}</p>
