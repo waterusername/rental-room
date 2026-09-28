@@ -238,6 +238,13 @@
       "alt": "Exterior of 65 Macormac Place, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 42%"
+    },
+    "apt-1-coonley-court-unit-1": {
+      "src": "/exteriors/apt-1-coonley-court-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 1 Coonley Court, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 38%"
     }
   }
 }
