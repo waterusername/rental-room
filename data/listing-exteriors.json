@@ -14,6 +14,13 @@
       "alt": "exterior of 240 Benziger Ave, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 42%"
+    },
+    "apt-111-osgood-avenue-unit-1": {
+      "src": "/exteriors/apt-111-osgood-avenue-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 111 Osgood Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 22%"
     }
   }
 }
