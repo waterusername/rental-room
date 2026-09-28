@@ -63,6 +63,13 @@
       "alt": "Exterior of 153 Brighton Avenue, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 40%"
+    },
+    "apt-122-targee-street-unit-2": {
+      "src": "/exteriors/apt-122-targee-street-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 122 Targee Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 32%"
     }
   }
 }
