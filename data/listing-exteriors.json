@@ -203,6 +203,13 @@
       "alt": "Exterior of 128 Port Richmond Ave, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 36%"
+    },
+    "apt-132-hendricks-avenue-unit-2": {
+      "src": "/exteriors/apt-132-hendricks-avenue-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 132 Hendricks Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
     }
   }
 }
