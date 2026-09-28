@@ -231,6 +231,13 @@
       "alt": "Exterior of 863 Post Ave, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 38%"
+    },
+    "apt-65-macormac-place-unit-2-basement": {
+      "src": "/exteriors/apt-65-macormac-place-unit-2-basement.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 65 Macormac Place, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 42%"
     }
   }
 }
