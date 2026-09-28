@@ -61,3 +61,10 @@ body {
 ::selection {
   background: #d5e4dc;
 }
+
+/* Plain :hover, not Tailwind's group-hover. That variant is wrapped in
+   @media (hover: hover) and stays hidden when a mouse is used on a display
+   the browser still treats as coarse. */
+.unit-card:hover .unit-facts-overlay {
+  opacity: 1;
+}
