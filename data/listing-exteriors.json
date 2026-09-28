@@ -7,6 +7,13 @@
       "alt": "Exterior of 124 Alaska St, Unit 2 basement, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 22%"
+    },
+    "apt-240-benziger-ave-unit-1": {
+      "src": "/exteriors/apt-240-benziger-ave-unit-1.jpg",
+      "kind": "photo",
+      "alt": "exterior of 240 Benziger Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 42%"
     }
   }
 }
