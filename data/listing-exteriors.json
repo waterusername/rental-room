@@ -217,6 +217,13 @@
       "alt": "Exterior of 9 Baltc Ave, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 36%"
+    },
+    "apt-627-cary-avenue-unit-1": {
+      "src": "/exteriors/apt-627-cary-avenue-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 627 Cary Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
     }
   }
 }
