@@ -224,6 +224,13 @@
       "alt": "Exterior of 627 Cary Avenue, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 36%"
+    },
+    "apt-863-post-ave-unit-1": {
+      "src": "/exteriors/apt-863-post-ave-unit-1.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 863 Post Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 38%"
     }
   }
 }
