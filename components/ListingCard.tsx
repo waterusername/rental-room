@@ -39,22 +39,22 @@ export function ListingCard({
               style={{ objectPosition: photo.objectPosition ?? "center" }}
               sizes="(min-width: 768px) 560px, 100vw"
             />
-            <span className="absolute bottom-3 left-3 z-10 rounded-full bg-[#1b3a31]/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+            <span className="unit-photo-badge absolute bottom-3 left-3 z-10 rounded-full bg-[#1b3a31]/85 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition-opacity duration-150">
               {photo.kind === "map" ? "Map" : "Exterior"}
             </span>
             <div
               aria-hidden="true"
-              className="unit-facts-overlay pointer-events-none absolute inset-0 z-20 flex flex-col justify-center bg-[#142820]/92 p-5 text-white opacity-0 transition-opacity duration-150"
+              className="unit-facts-overlay pointer-events-none absolute inset-0 z-20 flex flex-col justify-center bg-[#0e1a16]/70 p-5 text-white opacity-0 transition-opacity duration-150"
             >
               <p className="font-serif text-2xl font-semibold leading-tight tracking-tight">{listing.address}</p>
               <p className="mt-2 text-sm">{unitLabel(listing.unit)}</p>
-              <p className="mt-1 text-sm">{listing.zip ?? "Zip not listed"}</p>
+              <p className="mt-1 text-sm text-white/90">{listing.zip ?? "Zip not listed"}</p>
               {facts.length > 0 ? (
-                <dl className="mt-4 space-y-1.5 text-sm">
+                <dl className="mt-4 divide-y divide-white/30 overflow-hidden rounded-lg border border-white/35 bg-black/30 text-sm">
                   {facts.map((fact) => (
-                    <div key={fact.label} className="flex items-baseline justify-between gap-4">
+                    <div key={fact.label} className="grid grid-cols-[1fr_auto] items-baseline gap-4 px-3 py-2.5">
                       <dt className="text-white/80">{fact.label}</dt>
-                      <dd className="font-semibold">{fact.value}</dd>
+                      <dd className="text-right font-semibold tabular-nums">{fact.value}</dd>
                     </div>
                   ))}
                 </dl>

@@ -68,3 +68,7 @@ body {
 .unit-card:hover .unit-facts-overlay {
   opacity: 1;
 }
+
+.unit-card:hover .unit-photo-badge {
+  opacity: 0;
+}
