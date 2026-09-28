@@ -210,6 +210,13 @@
       "alt": "Exterior of 132 Hendricks Avenue, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 36%"
+    },
+    "apt-9-baltc-ave-unit-3": {
+      "src": "/exteriors/apt-9-baltc-ave-unit-3.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 9 Baltc Ave, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 36%"
     }
   }
 }
