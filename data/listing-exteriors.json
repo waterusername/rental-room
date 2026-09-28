@@ -56,6 +56,13 @@
       "alt": "Exterior of 310 York Avenue, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 42%"
+    },
+    "apt-153-brighton-avenue-unit-2": {
+      "src": "/exteriors/apt-153-brighton-avenue-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 153 Brighton Avenue, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
     }
   }
 }
