@@ -120,6 +120,38 @@ export function UnitDetail({
         </section>
       ) : null}
 
+      {photo ? (
+        <section className="mt-8" aria-labelledby="exterior-heading">
+          <h2 id="exterior-heading" className="font-serif text-2xl font-semibold">
+            Building exterior
+          </h2>
+          <figure className="mt-4 max-w-3xl overflow-hidden rounded-lg border border-line bg-panel shadow-[var(--shadow)]">
+            <div className="relative aspect-[16/10] bg-panel-2">
+              {direct ? (
+                // The optimizer URL is session-gated. This src carries the share token instead.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`${assetBase}/exterior`}
+                  alt={photo.alt}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  style={{ objectPosition: photo.objectPosition ?? "center" }}
+                />
+              ) : (
+                <Image
+                  src={photo.src}
+                  alt={photo.alt}
+                  fill
+                  className="object-cover"
+                  style={{ objectPosition: photo.objectPosition ?? "center" }}
+                  sizes="(min-width: 768px) 768px, 100vw"
+                />
+              )}
+            </div>
+            <figcaption className="border-t border-line px-4 py-2 text-xs text-muted">{photo.credit}</figcaption>
+          </figure>
+        </section>
+      ) : null}
+
       <section className="mt-8" aria-labelledby="facts-heading">
         <h2 id="facts-heading" className="font-serif text-2xl font-semibold">
           Details
@@ -170,29 +202,6 @@ export function UnitDetail({
             ))}
         </div>
       </section>
-
-      {photo ? (
-        <section className="mt-10" aria-labelledby="exterior-heading">
-          <h2 id="exterior-heading" className="font-serif text-2xl font-semibold">
-            Building exterior
-          </h2>
-          <figure className="mt-4 max-w-xl overflow-hidden rounded-lg border border-line bg-panel shadow-[var(--shadow)]">
-            <div className="relative aspect-[16/10] bg-panel-2">
-              {direct ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`${assetBase}/exterior`}
-                  alt={photo.alt}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              ) : (
-                <Image src={photo.src} alt={photo.alt} fill className="object-cover" sizes="576px" />
-              )}
-            </div>
-            <figcaption className="border-t border-line px-4 py-2 text-xs text-muted">{photo.credit}</figcaption>
-          </figure>
-        </section>
-      ) : null}
     </article>
   );
 }
