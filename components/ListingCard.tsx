@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Chip } from "./Chip";
+import { ClaimUnitForm } from "./ClaimUnitForm";
 import { listingSqft } from "@/lib/floor-plan";
 import { displayedStatus, type BoardSectionId } from "@/lib/board";
+import { claimBrokerLabel, claimNotifyLabel, formatClaimedAt, type ClaimSummary } from "@/lib/claim-record";
 import {
   bathCount,
   bedCount,
@@ -18,20 +20,25 @@ export function ListingCard({
   listing,
   photo,
   section,
+  claim = null,
+  allowClaim = false,
 }: {
   listing: Listing;
   photo: ExteriorPhoto | null;
   section?: BoardSectionId;
+  claim?: ClaimSummary | null;
+  allowClaim?: boolean;
 }) {
   const name = `${listing.address}, ${unitLabel(listing.unit)}`;
   const facts = unitFacts(listing);
   const label = displayedStatus(listing.status, section);
   const tone = statusTone(section === "reserved" ? "reserved" : section === "coming-up" ? "turnover" : listing.status);
+  const showClaim = allowClaim && section !== "reserved";
   return (
-    <li>
+    <li className="flex h-full flex-col overflow-hidden rounded-lg border border-line bg-panel text-ink shadow-[var(--shadow)] transition hover:border-accent-border">
       <Link
         href={`/units/${listing.id}`}
-        className={`unit-card flex h-full flex-col overflow-hidden rounded-lg border border-line bg-panel text-ink no-underline shadow-[var(--shadow)] transition hover:border-accent-border hover:bg-accent-soft/40 ${photo ? "" : "p-4"}`}
+        className={`unit-card flex flex-1 flex-col text-ink no-underline hover:bg-accent-soft/40 ${photo ? "" : "p-4"}`}
       >
         {photo ? (
           <div className="relative isolate aspect-square bg-panel-2">
@@ -97,9 +104,17 @@ export function ListingCard({
               </li>
             ) : null}
           </ul>
+          {claim ? (
+            <p className="mt-3 text-sm leading-5 text-muted">
+              Claimed by {claimBrokerLabel(claim)} · {formatClaimedAt(claim.claimedAt)}
+              {claim.note ? ` · ${claim.note}` : ""}
+              {` · ${claimNotifyLabel(claim.notifyStatus)}`}
+            </p>
+          ) : null}
           <span className="sr-only">Open details for {name}</span>
         </div>
       </Link>
+      {showClaim ? <ClaimUnitForm unitId={listing.id} unitTitle={name} variant="card" /> : null}
     </li>
   );
 }

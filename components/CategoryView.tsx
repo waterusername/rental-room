@@ -1,22 +1,24 @@
 import { Browser } from "./Browser";
+import { boardClaims } from "@/lib/claim-unit";
 import { getCurrentSession } from "@/lib/auth/guards";
 import { apartmentBoardGroups, categoryMeta, inventory, listingsFor } from "@/lib/inventory";
 import { exteriorFor } from "@/lib/street-view";
 import type { Category } from "@/lib/types";
 
-export async function CategoryView({ category }: { category: Category }) {
+export async function CategoryView({ category, notice }: { category: Category; notice?: string }) {
   const meta = categoryMeta(category);
   const isHome = category === "apartment";
   const session = isHome ? await getCurrentSession() : null;
   const includeReserved = session?.role === "admin";
-  const groups = isHome ? apartmentBoardGroups(includeReserved) : undefined;
+  const claimed = isHome ? await boardClaims() : null;
+  const groups = isHome ? apartmentBoardGroups(includeReserved, claimed?.ids) : undefined;
   const listings = groups ? groups.flatMap((group) => group.listings) : listingsFor(category);
   const withTour = listings.filter((listing) => listing.tours.length > 0).length;
   const availableCount = groups?.find((group) => group.id === "available")?.listings.length ?? 0;
   const comingCount = groups?.find((group) => group.id === "coming-up")?.listings.length ?? 0;
   const reservedCount = groups?.find((group) => group.id === "reserved")?.listings.length ?? 0;
   const lede = isHome && includeReserved
-    ? "Available units, Coming Up for units still turning over, and Reserved. Only administrators see Reserved. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, and a Matterport tour when a link is on file."
+    ? "Available units, Coming Up for units still turning over, and Reserved. Reserved includes the office sheet and units a broker claimed. Only administrators see Reserved. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, and a Matterport tour when a link is on file."
     : meta.lede;
 
   return (
@@ -28,6 +30,11 @@ export async function CategoryView({ category }: { category: Category }) {
         {isHome ? "Find the unit. See the space." : meta.title}
       </h1>
       <p className="mt-4 max-w-2xl text-base leading-7 text-muted">{lede}</p>
+      {notice ? (
+        <p role="status" className="mt-4 max-w-2xl rounded-md border border-accent-border bg-accent-soft px-3 py-2 text-sm text-accent">
+          {notice}
+        </p>
+      ) : null}
       <dl className={`mt-6 grid grid-cols-2 gap-3 ${includeReserved ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
         {isHome ? (
           <>
@@ -61,6 +68,8 @@ export async function CategoryView({ category }: { category: Category }) {
           }),
         )}
         variant={isHome ? "apartment" : "inventory"}
+        claims={includeReserved && claimed ? claimed.byUnit : undefined}
+        allowClaim={session?.role === "broker"}
       />
     </div>
   );

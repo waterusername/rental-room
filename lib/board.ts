@@ -13,6 +13,8 @@ import type { Listing } from "./types";
  * Any other status (credit check, under initial development, blank) stays in
  * Available so it remains broker-visible, and the card keeps the sheet wording.
  * A row in `listings.reserved` is Reserved even when its status text differs.
+ * A broker claim is not written into that file. Callers pass its unit id in
+ * `extraReservedIds`, and it uses this same reserved bucket.
  */
 
 export type BoardSectionId = "available" | "coming-up" | "reserved";
@@ -38,7 +40,7 @@ export const BOARD_SECTIONS: readonly { id: BoardSectionId; title: string; lede:
   {
     id: "reserved",
     title: "Reserved",
-    lede: "Marked Reserve or Reserved. Only administrators see this section, and these units are not shared.",
+    lede: "Marked Reserve or Reserved on the sheet, or claimed by a broker. Only administrators see this section, and these units are not shared.",
   },
 ];
 
@@ -86,9 +88,12 @@ export function displayedStatus(status: string, section?: BoardSectionId): strin
 export function groupBoardListings(
   apartments: Listing[],
   reserved: Listing[],
-  options: { includeReserved: boolean },
+  options: { includeReserved: boolean; extraReservedIds?: Iterable<string> },
 ): BoardGroup[] {
   const reservedIds = new Set(reserved.map((listing) => listing.id));
+  if (options.extraReservedIds) {
+    for (const id of options.extraReservedIds) reservedIds.add(id);
+  }
   const buckets: Record<BoardSectionId, Listing[]> = {
     available: [],
     "coming-up": [],

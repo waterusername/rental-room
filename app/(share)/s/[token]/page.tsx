@@ -5,6 +5,7 @@ import { UnitDetail } from "@/components/UnitDetail";
 import { readShareGate, recordShareView } from "@/lib/auth/db";
 import { isShareToken } from "@/lib/auth/share-access";
 import { unitLabel } from "@/lib/format";
+import { claimedUnitIds } from "@/lib/claim-unit";
 import { findListing, isReservedListing } from "@/lib/inventory";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ export async function generateMetadata({
     if (gate.status === "revoked") return { ...closed, title: "Link revoked" };
     if (gate.status !== "open") return closed;
     const listing = findListing(gate.share.unitId);
-    if (!listing || isReservedListing(listing)) return closed;
+    if (!listing || isReservedListing(listing, await claimedUnitIds())) return closed;
     return {
       title: `${listing.address} ${unitLabel(listing.unit)}`,
       description: "A single Grinberg unit shared with you.",
@@ -52,7 +53,14 @@ export default async function SharedUnitPage({ params }: { params: Promise<{ tok
   const share = gate.share;
 
   const listing = findListing(share.unitId);
-  if (!listing || isReservedListing(listing)) notFound();
+  let claimed: Set<string>;
+  try {
+    claimed = await claimedUnitIds();
+  } catch (error) {
+    console.error("Claim lookup failed", error instanceof Error ? error.message : "unknown");
+    notFound();
+  }
+  if (!listing || isReservedListing(listing, claimed)) notFound();
 
   try {
     await recordShareView(share.id);

@@ -46,6 +46,9 @@ Production needs a hosted database. The serverless filesystem is not a durable p
 | `STRIPE_WEBHOOK_SECRET` | Optional. |
 | `STRIPE_PRICE_ID` | Optional. Recurring Price ID (`price_...`). The Stripe Price must be **$100 USD per month**. The app sends this ID and does not set the amount. |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optional. Hosted Checkout does not require it; keep it for a future Stripe.js form. |
+| `OFFICE_NOTIFY_EMAILS` | Optional. Comma-separated office addresses for broker claim emails. When empty, the Grinberg office list in `lib/auth/config.ts` is used. `daniel@grinbergmanagement.com` is always included. |
+| `RESEND_API_KEY` | Optional. Resend API key. Both this and `MAIL_FROM` must be set before a claim email is sent. The claim is saved either way. |
+| `MAIL_FROM` | Optional. From address Resend will accept, for example `Grinberg Rental Room <office@your-verified-domain>`. |
 
 4. Redeploy.
 5. Open the site and sign in as the administrator.
@@ -73,6 +76,17 @@ A signed-in broker or administrator who can open the boards can send a prospect 
 7. Access desk lists, for each broker, the units they shared, with created, expires, revoked, status (active, expired, or revoked), and views. Opening a link adds a view and a last-opened time. Expired and revoked rows stay in that history.
 
 The `unit_shares` table is created in the existing Turso database the first time the app connects. If the unit is later removed from the vacancy file, the link stops opening it. The address label from the day it was shared remains on the record.
+
+### Broker claims
+
+A signed-in broker who can open the boards can mark an Available or Coming Up apartment Reserved when they are working that deal.
+
+1. On the apartment board, choose **Mark reserved** on the card, or open the unit and choose **Mark reserved**. An optional note (up to 280 characters) can go with the unit-page form. The broker’s name and email come from the session.
+2. The unit leaves the broker board. Brokers cannot open it or create a share link, and an existing share link stops opening it. The Reserved tab stays administrator-only.
+3. Administrators see the unit under Reserved, on the apartment board and at `/reserved`, with who claimed it, when, the note, and whether the office email was sent.
+4. The claim is a row in `unit_claims` (created on the existing Turso database the first time the app connects). It is not written into `data/rental-listings.json`. Replacing that file does not clear claims. A claim for a unit id that is no longer in the file stays in the database and drops off the board.
+
+The office email is sent only when `RESEND_API_KEY` and `MAIL_FROM` are both set. The message goes to `OFFICE_NOTIFY_EMAILS` when that list is set, otherwise to every address in the Grinberg office list (`GRINBERG_ADMIN_EMAILS` in `lib/auth/config.ts`). `daniel@grinbergmanagement.com` is always included. There is no SMTP password in this app. Until the Resend variables are set, the claim is still saved and the Reserved card says **Office email not configured**.
 
 ### Share-risk flags
 
@@ -126,6 +140,7 @@ Use Stripe test keys until a real charge should go through. These variables stil
    - `Available` → **Available**, shown to brokers and administrators.
    - `Turnover In Progress`, `Turn Over In Progress`, or other turnover wording → **Coming Up**. The board does not use the raw sheet phrase as the section title. Brokers and administrators both see it.
    - `Reserve`, `Reserved`, or `RESERVED` → **Reserved**. Brokers do not see these units on the apartment board, cannot open the unit page, and cannot create a share link. An existing share link stops opening the unit. Administrators see them in the Reserved section on the apartment board and at `/reserved`.
+   - A broker can also mark an Available or Coming Up unit Reserved from the unit page or the card. That claim is stored in Turso (`unit_claims`), not written back into this JSON file. It uses the same reserved id set as a `listings.reserved` row: brokers lose the board, the unit page, and share links, and administrators still see it under Reserved, with the broker’s name, email, time, and note.
    - Any other status (for example credit check, under initial development, or a blank status) stays in **Available**. The card keeps that sheet wording.
 4. A row in `listings.reserved` is Reserved even if its status text is different. The same unit may also remain in `listings.apartments`; it is still listed only under Reserved. `listings.commercial`, `listings.garages`, `listings.storages`, `listings.pipeline`, and `listings.residentialTracker` stay in the file so the shape is stable. Those tabs are not pages.
 5. Restart the dev server, or redeploy. The file is imported at build time.

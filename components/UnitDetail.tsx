@@ -4,7 +4,8 @@ import type { ReactNode } from "react";
 import { ExteriorPhoto } from "@/components/ExteriorPhoto";
 import { GrinbergNotice } from "@/components/GrinbergNotice";
 import { TourViewer } from "@/components/TourViewer";
-import { displayedStatus } from "@/lib/board";
+import { displayedStatus, type BoardSectionId } from "@/lib/board";
+import { claimBrokerLabel, claimNotifyLabel, formatClaimedAt, type ClaimSummary } from "@/lib/claim-record";
 import {
   applyHref,
   bathCount,
@@ -24,14 +25,18 @@ export function UnitDetail({
   notice = null,
   assetBase = null,
   showBackLink = true,
+  section: sectionProp,
+  claim = null,
 }: {
   listing: Listing;
   notice?: ReactNode;
   assetBase?: string | null;
   showBackLink?: boolean;
+  section?: BoardSectionId;
+  claim?: ClaimSummary | null;
 }) {
   const { meta, note, title, photo, tours, floorPlans } = presentListing(listing);
-  const section = sectionFor(listing);
+  const section = sectionProp ?? sectionFor(listing);
   const crumb = section === "reserved" ? { href: "/reserved", label: "Reserved" } : { href: meta.href, label: meta.label };
   const beds = bedCount(listing);
   const baths = bathCount(listing);
@@ -57,6 +62,19 @@ export function UnitDetail({
         {listing.unitType ? ` · ${listing.unitType}` : ""}
       </p>
       {notice}
+      {claim ? (
+        <aside className="mt-6 rounded-lg border border-line bg-panel px-4 py-4" aria-label="Broker claim">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">Broker claim</h2>
+          <p className="mt-2 text-sm leading-6">
+            Claimed by {claimBrokerLabel(claim)} · {formatClaimedAt(claim.claimedAt)}
+          </p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted">
+            {claim.note ? claim.note : "No note."}
+          </p>
+          <p className="mt-2 text-sm font-semibold">{claimNotifyLabel(claim.notifyStatus)}</p>
+          {claim.notifyDetail ? <p className="mt-2 text-sm leading-6 text-muted">{claim.notifyDetail}</p> : null}
+        </aside>
+      ) : null}
 
       <section className="mt-6" aria-labelledby="facts-heading">
         <h2 id="facts-heading" className="font-serif text-2xl font-semibold">
