@@ -30,9 +30,14 @@ export function SiteHeader({
               Staten Island vacancy inventory. Source-reported from the office sheet.
             </p>
             {viewer.role === "admin" ? (
-              <Link href="/admin" className="text-sm font-semibold text-accent no-underline">
-                Access desk
-              </Link>
+              <>
+                <Link href="/admin/completed" className="text-sm font-semibold text-accent no-underline">
+                  Completed
+                </Link>
+                <Link href="/admin" className="text-sm font-semibold text-accent no-underline">
+                  Access desk
+                </Link>
+              </>
             ) : null}
             <Link href="/account" className="text-sm font-semibold text-ink no-underline">
               {viewer.name || viewer.email}

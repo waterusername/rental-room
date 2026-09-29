@@ -23,9 +23,14 @@ export function AccessHeader({
             Boards
           </Link>
           {role === "admin" ? (
-            <Link href="/admin" className="text-ink no-underline">
-              Brokers
-            </Link>
+            <>
+              <Link href="/admin" className="text-ink no-underline">
+                Brokers
+              </Link>
+              <Link href="/admin/completed" className="text-ink no-underline">
+                Completed
+              </Link>
+            </>
           ) : null}
           <Link href="/account" className="text-ink no-underline">
             Account

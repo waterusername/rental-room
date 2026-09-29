@@ -19,12 +19,20 @@ export default async function AdminHomePage() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">Administrators only</p>
           <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight">Broker access</h1>
         </div>
-        <Link
-          href="/admin/brokers/new"
-          className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
-        >
-          New broker
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/admin/completed"
+            className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline hover:border-accent-border"
+          >
+            Completed rentals
+          </Link>
+          <Link
+            href="/admin/brokers/new"
+            className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
+          >
+            New broker
+          </Link>
+        </div>
       </div>
       <p className="mt-4 max-w-3xl text-sm leading-6 text-muted">
         Times are UTC. Each successful sign-in stores the account, time, IP address, browser, and a short fingerprint of
