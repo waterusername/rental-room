@@ -162,6 +162,13 @@
       "credit": "Building exterior",
       "objectPosition": "center 40%"
     },
+    "apt-661-bay-street-unit-1": {
+      "src": "/exteriors/apt-663-bay-street-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 663 Bay Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
+    },
     "apt-79-clark-lane-unit-2": {
       "src": "/exteriors/apt-79-clark-lane-unit-2.jpg",
       "kind": "photo",
