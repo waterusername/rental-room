@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   clampZoomView,
   FIT_ZOOM,
@@ -64,7 +65,7 @@ export function ExteriorPhoto({
         </span>
       </button>
       <figcaption className="border-t border-line px-4 py-2 text-xs text-muted">{credit}</figcaption>
-      {open ? <ExteriorZoom src={src} alt={alt} onClose={close} /> : null}
+      {open ? createPortal(<ExteriorZoom src={src} alt={alt} onClose={close} />, document.body) : null}
     </figure>
   );
 }
@@ -78,6 +79,7 @@ function ExteriorZoom({ src, alt, onClose }: { src: string; alt: string; onClose
   const pinch = useRef<{ distance: number; scale: number; x: number; y: number } | null>(null);
   const pan = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
   const moved = useRef(false);
+  const pointerOnPhoto = useRef(false);
   const [view, setView] = useState<ZoomView>(FIT_ZOOM);
   const titleId = useId();
   const hintId = useId();
@@ -124,18 +126,11 @@ function ExteriorZoom({ src, alt, onClose }: { src: string; alt: string; onClose
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    let ignoreClose = false;
-    const handleClose = () => {
-      if (!ignoreClose) onClose();
-    };
-    dialog.addEventListener("close", handleClose);
     if (!dialog.open) dialog.showModal();
     return () => {
-      ignoreClose = true;
-      dialog.removeEventListener("close", handleClose);
       if (dialog.open) dialog.close();
     };
-  }, [onClose]);
+  }, []);
 
   useLayoutEffect(() => {
     const stage = stageRef.current;
@@ -179,6 +174,8 @@ function ExteriorZoom({ src, alt, onClose }: { src: string; alt: string; onClose
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0 && event.pointerType === "mouse") return;
+    pointerOnPhoto.current =
+      event.target instanceof HTMLElement && event.target.dataset.zoom === "photo";
     event.currentTarget.setPointerCapture(event.pointerId);
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     moved.current = false;
@@ -246,9 +243,7 @@ function ExteriorZoom({ src, alt, onClose }: { src: string; alt: string; onClose
       moved.current = false;
       return;
     }
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (target.dataset.zoom === "photo") {
+    if (pointerOnPhoto.current) {
       const stage = stageRef.current;
       if (!stage) return;
       const current = viewRef.current;
@@ -256,13 +251,24 @@ function ExteriorZoom({ src, alt, onClose }: { src: string; alt: string; onClose
       commit(zoomAtPoint(current, scale, { x: event.clientX, y: event.clientY }, stageBox(stage)));
       return;
     }
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
     if (target.dataset.stage === "pad" || target === event.currentTarget) onClose();
   }
 
   const zoomed = view.scale > 1.02;
 
   return (
-    <dialog ref={dialogRef} className="exterior-zoom" aria-labelledby={titleId} aria-describedby={hintId}>
+    <dialog
+      ref={dialogRef}
+      className="exterior-zoom"
+      aria-labelledby={titleId}
+      aria-describedby={hintId}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+    >
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
           <p id={titleId} className="truncate font-serif text-lg font-semibold">
