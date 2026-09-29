@@ -88,6 +88,27 @@ test("reserved rows stay out of the broker board even when status says Available
   assert.equal(isReservedListing(apartments[0], reservedIds), false);
 });
 
+test("broker claims join the reserved set and leave the broker board", () => {
+  const apartments = [
+    listing({ id: "open", status: "Available" }),
+    listing({ id: "soon", status: "Turn Over In Progress" }),
+    listing({ id: "claimed", status: "Available" }),
+  ];
+  const claimed = new Set(["claimed"]);
+  const broker = groupBoardListings(apartments, [], { includeReserved: false, extraReservedIds: claimed });
+  const admin = groupBoardListings(apartments, [], { includeReserved: true, extraReservedIds: claimed });
+  const brokerIds = broker.flatMap((group) => group.listings.map((item) => item.id));
+
+  assert.deepEqual(brokerIds, ["open", "soon"]);
+  assert.equal(broker.some((group) => group.id === "reserved"), false);
+  assert.deepEqual(
+    admin.find((group) => group.id === "reserved")?.listings.map((item) => item.id),
+    ["claimed"],
+  );
+  assert.equal(isReservedListing(apartments[2], claimed), true);
+  assert.equal(displayedStatus(apartments[2].status, "reserved"), "Reserved");
+});
+
 test("the published snapshot hides reserved units from brokers and labels turnover as Coming Up", () => {
   const raw = JSON.parse(
     fs.readFileSync(new URL("../data/rental-listings.json", import.meta.url), "utf8"),

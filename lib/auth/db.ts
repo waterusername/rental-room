@@ -27,6 +27,11 @@ import type {
   UserRecord,
 } from "./types.ts";
 import { COMPLETED_RENTAL_SEEDS, type CompletedRental, type CompletedRentalDraft } from "../completed-rentals.ts";
+import {
+  asClaimNotifyStatus,
+  type ClaimNotifyStatus,
+  type UnitClaim,
+} from "../claim-record.ts";
 import { GRINBERG_ADMIN_EMAILS } from "./staff.ts";
 import { BILLING_STATUSES, ROLES } from "./types.ts";
 
@@ -119,6 +124,20 @@ const SCHEMA = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
+  `CREATE TABLE IF NOT EXISTS unit_claims (
+    id TEXT PRIMARY KEY,
+    unit_id TEXT NOT NULL UNIQUE,
+    unit_address TEXT NOT NULL,
+    unit_label TEXT NOT NULL,
+    broker_user_id TEXT NOT NULL,
+    broker_email TEXT NOT NULL,
+    broker_name TEXT,
+    note TEXT NOT NULL DEFAULT '',
+    claimed_at TEXT NOT NULL,
+    notify_status TEXT NOT NULL,
+    notify_detail TEXT NOT NULL DEFAULT ''
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_unit_claims_claimed_at ON unit_claims (claimed_at)`,
 ];
 
 const ADDED_USER_COLUMNS: { name: string; definition: string }[] = [
@@ -1139,6 +1158,103 @@ export async function deleteCompletedRental(id: string): Promise<boolean> {
     args: [id],
   });
   return Number(result.rowsAffected ?? 0) > 0;
+}
+
+export class UnitAlreadyClaimedError extends Error {
+  constructor() {
+    super("UNIT_ALREADY_CLAIMED");
+    this.name = "UnitAlreadyClaimedError";
+  }
+}
+
+function isUniqueConstraint(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = error instanceof Error ? error.message : "";
+  return code.includes("SQLITE_CONSTRAINT") || /unique constraint failed/i.test(message);
+}
+
+function claimFromRow(row: Record<string, unknown>): UnitClaim {
+  return {
+    id: String(row.id),
+    unitId: String(row.unit_id),
+    unitAddress: String(row.unit_address),
+    unitLabel: String(row.unit_label),
+    brokerUserId: String(row.broker_user_id),
+    brokerEmail: String(row.broker_email),
+    brokerName: row.broker_name == null || row.broker_name === "" ? null : String(row.broker_name),
+    note: String(row.note ?? ""),
+    claimedAt: String(row.claimed_at),
+    notifyStatus: asClaimNotifyStatus(String(row.notify_status ?? "")),
+    notifyDetail: String(row.notify_detail ?? ""),
+  };
+}
+
+export async function listUnitClaims(): Promise<UnitClaim[]> {
+  await ensureSchema();
+  const result = await getClient().execute(
+    "SELECT * FROM unit_claims ORDER BY claimed_at DESC, unit_address ASC",
+  );
+  return result.rows.map((row) => claimFromRow(row as unknown as Record<string, unknown>));
+}
+
+export async function insertUnitClaim(input: {
+  unitId: string;
+  unitAddress: string;
+  unitLabel: string;
+  brokerUserId: string;
+  brokerEmail: string;
+  brokerName: string | null;
+  note: string;
+  claimedAt?: string;
+}): Promise<UnitClaim> {
+  await ensureSchema();
+  const claim: UnitClaim = {
+    id: randomUUID(),
+    unitId: input.unitId,
+    unitAddress: input.unitAddress,
+    unitLabel: input.unitLabel,
+    brokerUserId: input.brokerUserId,
+    brokerEmail: input.brokerEmail.trim().toLowerCase(),
+    brokerName: input.brokerName?.trim() || null,
+    note: input.note,
+    claimedAt: input.claimedAt ?? new Date().toISOString(),
+    notifyStatus: "pending",
+    notifyDetail: "",
+  };
+  try {
+    await getClient().execute({
+      sql: `INSERT INTO unit_claims (
+        id, unit_id, unit_address, unit_label, broker_user_id, broker_email, broker_name,
+        note, claimed_at, notify_status, notify_detail
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        claim.id,
+        claim.unitId,
+        claim.unitAddress,
+        claim.unitLabel,
+        claim.brokerUserId,
+        claim.brokerEmail,
+        claim.brokerName,
+        claim.note,
+        claim.claimedAt,
+        claim.notifyStatus,
+        claim.notifyDetail,
+      ],
+    });
+  } catch (error) {
+    if (isUniqueConstraint(error)) throw new UnitAlreadyClaimedError();
+    throw error;
+  }
+  return claim;
+}
+
+export async function updateUnitClaimNotify(id: string, status: ClaimNotifyStatus, detail: string): Promise<void> {
+  await ensureSchema();
+  await getClient().execute({
+    sql: "UPDATE unit_claims SET notify_status = ?, notify_detail = ? WHERE id = ?",
+    args: [status, detail.slice(0, 500), id],
+  });
 }
 
 export async function recordShareView(id: string, now = Date.now()): Promise<void> {

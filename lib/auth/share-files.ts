@@ -1,3 +1,4 @@
+import { claimedUnitIds } from "@/lib/claim-unit";
 import { findListing, isReservedListing } from "@/lib/inventory";
 import { presentListing } from "@/lib/unit-view";
 import type { Listing } from "@/lib/types";
@@ -30,7 +31,7 @@ async function readSharedUnitImage(
   const share = await readActiveShare(token);
   if (!share) return null;
   const listing = findListing(share.unitId);
-  if (!listing || isReservedListing(listing)) return null;
+  if (!listing || isReservedListing(listing, await claimedUnitIds())) return null;
   const src = select(listing);
   if (!src) return null;
   return readPublicImage(src);

@@ -56,6 +56,18 @@ export function getListing(id: string): Listing | undefined {
 
 const reservedIds: ReadonlySet<string> = new Set(inventory.listings.reserved.map((listing) => listing.id));
 
+function reservedIdSet(extraReservedIds?: Iterable<string>): ReadonlySet<string> {
+  if (!extraReservedIds) return reservedIds;
+  const ids = new Set(reservedIds);
+  for (const id of extraReservedIds) ids.add(id);
+  return ids;
+}
+
+/** Sheet reserved ids, plus broker claims when those ids are passed in. */
+export function listingReservedIds(extraReservedIds?: Iterable<string>): ReadonlySet<string> {
+  return reservedIdSet(extraReservedIds);
+}
+
 export function routableListings(): Listing[] {
   const seen = new Set<string>();
   const rows: Listing[] = [];
@@ -71,18 +83,22 @@ export function findListing(id: string): Listing | undefined {
   return routableListings().find((listing) => listing.id === id);
 }
 
-export function isReservedListing(listing: Listing): boolean {
-  return listingIsReserved(listing, reservedIds);
+export function isReservedListing(listing: Listing, extraReservedIds?: Iterable<string>): boolean {
+  return listingIsReserved(listing, reservedIdSet(extraReservedIds));
 }
 
-export function sectionFor(listing: Listing): BoardSectionId {
-  return boardSectionFor(listing, reservedIds);
+export function sectionFor(listing: Listing, extraReservedIds?: Iterable<string>): BoardSectionId {
+  return boardSectionFor(listing, reservedIdSet(extraReservedIds));
 }
 
-/** Broker groups omit Reserved. Administrators can include that section. */
-export function apartmentBoardGroups(includeReserved: boolean): BoardGroup[] {
+/**
+ * Broker groups omit Reserved. Administrators can include that section.
+ * `extraReservedIds` are broker claims. They use the same reserved bucket as sheet rows.
+ */
+export function apartmentBoardGroups(includeReserved: boolean, extraReservedIds?: Iterable<string>): BoardGroup[] {
   return groupBoardListings(inventory.listings.apartments, inventory.listings.reserved, {
     includeReserved,
+    extraReservedIds,
   });
 }
 

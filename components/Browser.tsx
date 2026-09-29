@@ -15,6 +15,7 @@ import {
   type UnitGroup,
 } from "@/lib/format";
 import type { BoardGroup } from "@/lib/board";
+import type { ClaimSummary } from "@/lib/claim-record";
 import { EMPTY_FILTERS, type Filters, type Listing } from "@/lib/types";
 
 const UNIT_ORDER: UnitGroup[] = ["0", "1", "2", "3", "4", "5", "garage", "storage", "retail", "other"];
@@ -25,12 +26,16 @@ export function Browser({
   photos,
   variant,
   showHeadings = true,
+  claims,
+  allowClaim = false,
 }: {
   listings: Listing[];
   groups?: BoardGroup[];
   photos: Record<string, ExteriorPhoto | null>;
   variant: "apartment" | "inventory";
   showHeadings?: boolean;
+  claims?: Record<string, ClaimSummary>;
+  allowClaim?: boolean;
 }) {
   const boardGroups = useMemo(() => groups ?? [], [groups]);
   const grouped = boardGroups.length > 0;
@@ -102,6 +107,8 @@ export function Browser({
                       listing={listing}
                       photo={photos[listing.id] ?? null}
                       section={group.id}
+                      claim={claims?.[listing.id] ?? null}
+                      allowClaim={allowClaim}
                     />
                   ))}
                 </ul>

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { claimedUnitIds } from "@/lib/claim-unit";
 import { findListing, isReservedListing } from "@/lib/inventory";
 import { unitLabel } from "@/lib/format";
 import { appBaseUrl } from "./stripe";
@@ -13,7 +14,9 @@ export async function createUnitShareAction(_prev: ActionState, formData: FormDa
   const session = await requireBrowse();
   const unitId = String(formData.get("unitId") ?? "");
   const listing = findListing(unitId);
-  if (!listing || isReservedListing(listing)) return { error: "That unit is not on the board." };
+  if (!listing || isReservedListing(listing, await claimedUnitIds())) {
+    return { error: "That unit is not on the board." };
+  }
 
   let origin: string;
   try {
