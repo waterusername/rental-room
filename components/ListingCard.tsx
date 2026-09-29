@@ -48,7 +48,7 @@ export function ListingCard({
             >
               <p className="font-serif text-2xl font-semibold leading-tight tracking-tight">{listing.address}</p>
               <p className="mt-2 text-sm">{unitLabel(listing.unit)}</p>
-              <p className="mt-1 text-sm text-white/90">{listing.zip ?? "Zip not listed"}</p>
+              {listing.zip ? <p className="mt-1 text-sm text-white/90">{listing.zip}</p> : null}
               {facts.length > 0 ? (
                 <dl className="mt-4 divide-y divide-white/30 overflow-hidden rounded-lg border border-white/35 bg-black/30 text-sm">
                   {facts.map((fact) => (
@@ -65,7 +65,9 @@ export function ListingCard({
         <div className={photo ? "flex flex-1 flex-col p-4" : "contents"}>
           <div className="flex items-start justify-between gap-3">
             <Chip tone={statusTone(listing.status)}>{statusLabel(listing.status)}</Chip>
-            <span className="text-xs font-semibold text-muted">{listing.zip ?? "Zip not listed"}</span>
+            {listing.zip ? (
+              <span className="text-xs font-semibold text-muted">{listing.zip}</span>
+            ) : null}
           </div>
           <h2 className="mt-3 font-serif text-xl font-semibold leading-tight tracking-tight">
             {listing.address}
