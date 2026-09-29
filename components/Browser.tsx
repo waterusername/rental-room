@@ -14,21 +14,33 @@ import {
   unitGroup,
   type UnitGroup,
 } from "@/lib/format";
+import type { BoardGroup } from "@/lib/board";
 import { EMPTY_FILTERS, type Filters, type Listing } from "@/lib/types";
 
 const UNIT_ORDER: UnitGroup[] = ["0", "1", "2", "3", "4", "5", "garage", "storage", "retail", "other"];
 
 export function Browser({
   listings,
+  groups,
   photos,
   variant,
+  showHeadings = true,
 }: {
   listings: Listing[];
+  groups?: BoardGroup[];
   photos: Record<string, ExteriorPhoto | null>;
   variant: "apartment" | "inventory";
+  showHeadings?: boolean;
 }) {
+  const boardGroups = useMemo(() => groups ?? [], [groups]);
+  const grouped = boardGroups.length > 0;
+  const universe = useMemo(
+    () => (grouped ? boardGroups.flatMap((group) => group.listings) : listings),
+    [boardGroups, grouped, listings],
+  );
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
-  const shown = useMemo(() => applyFilters(listings, filters), [listings, filters]);
+  const shown = useMemo(() => applyFilters(universe, filters), [universe, filters]);
+  const shownIds = useMemo(() => new Set(shown.map((listing) => listing.id)), [shown]);
   const active = Object.values(filters).some(Boolean);
 
   function update<K extends keyof Filters>(key: K, value: Filters[K]) {
@@ -42,7 +54,7 @@ export function Browser({
       </h2>
       {variant === "apartment" ? (
         <ApartmentFilters
-          listings={listings}
+          listings={universe}
           filters={filters}
           update={update}
           shown={shown.length}
@@ -51,7 +63,7 @@ export function Browser({
         />
       ) : (
         <InventoryFilters
-          listings={listings}
+          listings={universe}
           filters={filters}
           update={update}
           shown={shown.length}
@@ -60,7 +72,44 @@ export function Browser({
         />
       )}
 
-      {shown.length === 0 ? (
+      {grouped ? (
+        boardGroups.map((group) => {
+          const rows = group.listings.filter((listing) => shownIds.has(listing.id));
+          return (
+            <section
+              key={group.id}
+              aria-labelledby={showHeadings ? `board-${group.id}` : undefined}
+              aria-label={showHeadings ? undefined : group.title}
+              className="mt-10"
+            >
+              {showHeadings ? (
+                <>
+                  <h2 id={`board-${group.id}`} className="font-serif text-3xl font-semibold tracking-tight text-ink">
+                    {group.title}
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">{group.lede}</p>
+                </>
+              ) : null}
+              {rows.length === 0 ? (
+                <p className="mt-4 rounded-lg border border-dashed border-line bg-panel px-4 py-8 text-center text-muted">
+                  {group.listings.length === 0 ? "No units in this section right now." : "No listings match these filters."}
+                </p>
+              ) : (
+                <ul className="mt-4 grid gap-4 sm:gap-5 md:grid-cols-2">
+                  {rows.map((listing) => (
+                    <ListingCard
+                      key={listing.id}
+                      listing={listing}
+                      photo={photos[listing.id] ?? null}
+                      section={group.id}
+                    />
+                  ))}
+                </ul>
+              )}
+            </section>
+          );
+        })
+      ) : shown.length === 0 ? (
         <p className="mt-6 rounded-lg border border-dashed border-line bg-panel px-4 py-10 text-center text-muted">
           No listings match these filters.
         </p>

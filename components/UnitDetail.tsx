@@ -3,18 +3,18 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { GrinbergNotice } from "@/components/GrinbergNotice";
 import { TourViewer } from "@/components/TourViewer";
+import { displayedStatus } from "@/lib/board";
 import {
   applyHref,
   bathCount,
   bedCount,
   formatMoney,
-  statusLabel,
   isNamedPersonPhone,
   telHref,
   unitLabel,
   utilitiesLabel,
 } from "@/lib/format";
-import { inventory } from "@/lib/inventory";
+import { inventory, sectionFor } from "@/lib/inventory";
 import { presentListing } from "@/lib/unit-view";
 import type { Listing } from "@/lib/types";
 
@@ -30,6 +30,8 @@ export function UnitDetail({
   showBackLink?: boolean;
 }) {
   const { meta, note, title, photo, tours, floorPlans } = presentListing(listing);
+  const section = sectionFor(listing);
+  const crumb = section === "reserved" ? { href: "/reserved", label: "Reserved" } : { href: meta.href, label: meta.label };
   const beds = bedCount(listing);
   const baths = bathCount(listing);
   const washer = yesNo(listing.washerDryer, "Yes", "No");
@@ -40,12 +42,12 @@ export function UnitDetail({
   return (
     <article className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
       {showBackLink ? (
-        <Link href={meta.href} className="text-sm font-semibold text-accent">
-          ← {meta.label}
+        <Link href={crumb.href} className="text-sm font-semibold text-accent">
+          ← {crumb.label}
         </Link>
       ) : null}
       <p className={`${showBackLink ? "mt-5" : ""} text-xs font-semibold uppercase tracking-[0.16em] text-accent`}>
-        {meta.label}
+        {crumb.label}
         {listing.zip ? ` · ${listing.zip}` : ""}
       </p>
       <h1 className="mt-2 font-serif text-4xl font-semibold tracking-tight sm:text-5xl">{listing.address}</h1>
@@ -76,7 +78,7 @@ export function UnitDetail({
           {listing.minRent == null && listing.targetRent == null && listing.potentialRent == null ? (
             <Fact label="Rent" value="Not listed" />
           ) : null}
-          <Fact label="Status" value={statusLabel(listing.status)} />
+          <Fact label="Status" value={displayedStatus(listing.status, section)} />
           {listing.zip ? <Fact label="Zip" value={listing.zip} /> : null}
           {listing.unitType ? <Fact label="Unit type" value={listing.unitType} /> : null}
         </dl>

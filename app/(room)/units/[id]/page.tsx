@@ -4,11 +4,12 @@ import { ShareUnitPanel } from "@/components/ShareUnitPanel";
 import { UnitDetail } from "@/components/UnitDetail";
 import { viewerCanBrowse } from "@/lib/auth/config";
 import { getCurrentSession } from "@/lib/auth/guards";
-import { rentSummary, statusLabel, unitLabel } from "@/lib/format";
-import { allListings, getListing } from "@/lib/inventory";
+import { displayedStatus } from "@/lib/board";
+import { rentSummary, unitLabel } from "@/lib/format";
+import { findListing, isReservedListing, routableListings, sectionFor } from "@/lib/inventory";
 
 export function generateStaticParams() {
-  return allListings().map((listing) => ({ id: listing.id }));
+  return routableListings().map((listing) => ({ id: listing.id }));
 }
 
 export const dynamicParams = false;
@@ -23,21 +24,26 @@ export async function generateMetadata({
     return { title: "Sign in" };
   }
   const { id } = await params;
-  const listing = getListing(id);
-  if (!listing) return { title: "Unit not found" };
+  const listing = findListing(id);
+  if (!listing || (isReservedListing(listing) && session.role !== "admin")) {
+    return { title: "Unit not found" };
+  }
   return {
     title: `${listing.address} ${unitLabel(listing.unit)}`,
-    description: `${statusLabel(listing.status)}. ${rentSummary(listing)}.`,
+    description: `${displayedStatus(listing.status, sectionFor(listing))}. ${rentSummary(listing)}.`,
   };
 }
 
 export default async function UnitPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const listing = getListing(id);
+  const listing = findListing(id);
   if (!listing) notFound();
 
   const session = await getCurrentSession();
-  const canShare = Boolean(session && !session.mustResetPassword && viewerCanBrowse(session));
+  if (isReservedListing(listing) && session?.role !== "admin") notFound();
+  const canShare = Boolean(
+    session && !session.mustResetPassword && viewerCanBrowse(session) && !isReservedListing(listing),
+  );
   const unitTitle = `${listing.address}, ${unitLabel(listing.unit)}`;
 
   return (

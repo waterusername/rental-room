@@ -2,7 +2,7 @@
 
 A vacancy board for Grinberg apartments. It follows the browse-and-detail feel of a portfolio deal room, for rental units rather than development assemblages.
 
-Listings, tours, rents, and office notes come from `data/rental-listings.json`. The site does not call Google Sheets.
+Listings, tours, rents, and office notes come from `data/rental-listings.json`. The site does not call Google Sheets. Apartment `status` in that file selects the board section: Available, Coming Up (turnover), or Reserved (administrators only).
 
 The boards are private. A visitor who is not signed in sees a login page and no listings. Brokers sign in with email and password. Administrators manage those accounts, review sign-in history, and can require a Stripe subscription.
 
@@ -66,7 +66,7 @@ A signed-in broker or administrator who can open the boards can send a prospect 
 
 1. Open that unit and choose **Create share link**.
 2. Copy the URL and send it to the prospect. The raw link is shown once. The access database stores a SHA-256 of the token, the link id, the broker’s user id and email, the unit id, and the address label. It does not store the raw URL.
-3. The prospect can open that unit — tour, floor plan, rent, and the rest of the unit page — without a broker login.
+3. The prospect can open that unit — tour, floor plan, rent, and the rest of the unit page — without a broker login. Reserved units are not shareable. Creating a link is refused, and a link created earlier stops opening the unit once it is reserved.
 4. The same link does not open the homepage, category boards, other units, the access desk, or account pages. Those still require a broker session.
 5. Every link expires 1 day (24 hours) after it is created. A disabled account, or an outside broker who can no longer browse because billing lapsed, also stops that person’s links. An expired or revoked link shows that it is closed and does not show the unit.
 6. Only an administrator can revoke a link, from that broker’s page on the access desk. Brokers do not see share history on the unit page or under Account.
@@ -122,10 +122,15 @@ Use Stripe test keys until a real charge should go through. These variables stil
 
 1. Replace `data/rental-listings.json` with the new snapshot.
 2. Keep the same top-level shape: `source`, `contact`, and `listings`.
-3. The public site reads `listings.apartments` only. That array is the Available Apartments tab. `listings.commercial`, `listings.garages`, `listings.storages`, `listings.pipeline`, `listings.reserved`, and `listings.residentialTracker` stay in the file so the shape is stable, and they are empty. Those tabs are not pages.
-4. Restart the dev server, or redeploy. The file is imported at build time.
+3. Apartment `status` selects the section. Matching is case-insensitive and treats `Turn Over` and `Turnover` as the same word.
+   - `Available` → **Available**, shown to brokers and administrators.
+   - `Turnover In Progress`, `Turn Over In Progress`, or other turnover wording → **Coming Up**. The board does not use the raw sheet phrase as the section title. Brokers and administrators both see it.
+   - `Reserve`, `Reserved`, or `RESERVED` → **Reserved**. Brokers do not see these units on the apartment board, cannot open the unit page, and cannot create a share link. An existing share link stops opening the unit. Administrators see them in the Reserved section on the apartment board and at `/reserved`.
+   - Any other status (for example credit check, under initial development, or a blank status) stays in **Available**. The card keeps that sheet wording.
+4. A row in `listings.reserved` is Reserved even if its status text is different. The same unit may also remain in `listings.apartments`; it is still listed only under Reserved. `listings.commercial`, `listings.garages`, `listings.storages`, `listings.pipeline`, and `listings.residentialTracker` stay in the file so the shape is stable. Those tabs are not pages.
+5. Restart the dev server, or redeploy. The file is imported at build time.
 
-Rows from other tabs are not added as cards. The current snapshot has 39 apartments.
+Rows from other tabs are not added as cards. The current snapshot has 39 apartments, plus any Reserved rows in `listings.reserved`.
 
 `contact.applyEmail` is the apply mailto on each unit. The office phone is a call link. Dimitry’s number is plain text in the footer, not a call button.
 

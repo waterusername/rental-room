@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getListing } from "@/lib/inventory";
+import { findListing, isReservedListing } from "@/lib/inventory";
 import { unitLabel } from "@/lib/format";
 import { appBaseUrl } from "./stripe";
 import { createUnitShare, revokeUnitShare } from "./db";
@@ -12,8 +12,8 @@ import type { ActionState } from "./types";
 export async function createUnitShareAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const session = await requireBrowse();
   const unitId = String(formData.get("unitId") ?? "");
-  const listing = getListing(unitId);
-  if (!listing) return { error: "That unit is not on the board." };
+  const listing = findListing(unitId);
+  if (!listing || isReservedListing(listing)) return { error: "That unit is not on the board." };
 
   let origin: string;
   try {
@@ -52,7 +52,7 @@ export async function revokeUnitShareAction(formData: FormData): Promise<void> {
   const session = await requireAdmin();
   const id = String(formData.get("shareId") ?? "").trim();
   const unitId = String(formData.get("unitId") ?? "").trim();
-  if (!id || !getListing(unitId)) return;
+  if (!id || !findListing(unitId)) return;
   try {
     await revokeUnitShare({
       id,

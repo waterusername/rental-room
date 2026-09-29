@@ -1,14 +1,23 @@
 import { Browser } from "./Browser";
-import { categoryMeta, inventory, listingsFor } from "@/lib/inventory";
+import { getCurrentSession } from "@/lib/auth/guards";
+import { apartmentBoardGroups, categoryMeta, inventory, listingsFor } from "@/lib/inventory";
 import { exteriorFor } from "@/lib/street-view";
 import type { Category } from "@/lib/types";
 
-export function CategoryView({ category }: { category: Category }) {
+export async function CategoryView({ category }: { category: Category }) {
   const meta = categoryMeta(category);
-  const listings = listingsFor(category);
-  const withTour = listings.filter((listing) => listing.tours.length > 0).length;
-  const available = listings.filter((listing) => listing.status.toLowerCase().includes("available")).length;
   const isHome = category === "apartment";
+  const session = isHome ? await getCurrentSession() : null;
+  const includeReserved = session?.role === "admin";
+  const groups = isHome ? apartmentBoardGroups(includeReserved) : undefined;
+  const listings = groups ? groups.flatMap((group) => group.listings) : listingsFor(category);
+  const withTour = listings.filter((listing) => listing.tours.length > 0).length;
+  const availableCount = groups?.find((group) => group.id === "available")?.listings.length ?? 0;
+  const comingCount = groups?.find((group) => group.id === "coming-up")?.listings.length ?? 0;
+  const reservedCount = groups?.find((group) => group.id === "reserved")?.listings.length ?? 0;
+  const lede = isHome && includeReserved
+    ? "Available units, Coming Up for units still turning over, and Reserved. Only administrators see Reserved. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, and a Matterport tour when a link is on file."
+    : meta.lede;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -18,19 +27,20 @@ export function CategoryView({ category }: { category: Category }) {
       <h1 className="mt-2 max-w-3xl font-serif text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
         {isHome ? "Find the unit. See the space." : meta.title}
       </h1>
-      <p className="mt-4 max-w-2xl text-base leading-7 text-muted">{meta.lede}</p>
-      <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <p className="mt-4 max-w-2xl text-base leading-7 text-muted">{lede}</p>
+      <dl className={`mt-6 grid grid-cols-2 gap-3 ${includeReserved ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
         {isHome ? (
           <>
-            <Stat label="Apartments" value={String(listings.length)} />
+            <Stat label="Available" value={String(availableCount)} />
+            <Stat label="Coming Up" value={String(comingCount)} />
             <Stat label="With a tour" value={String(withTour)} />
-            <Stat label="Marked available" value={String(available)} />
+            {includeReserved ? <Stat label="Reserved" value={String(reservedCount)} /> : null}
           </>
         ) : (
           <>
             <Stat label="In this list" value={String(listings.length)} />
             <Stat label="With a tour" value={String(withTour)} />
-            <Stat label="Marked available" value={String(available)} />
+            <Stat label="Marked available" value={String(listings.filter((listing) => listing.status.toLowerCase().includes("available")).length)} />
           </>
         )}
       </dl>
@@ -43,6 +53,7 @@ export function CategoryView({ category }: { category: Category }) {
       ) : null}
       <Browser
         listings={listings}
+        groups={groups}
         photos={Object.fromEntries(
           listings.map((listing) => {
             const photo = exteriorFor(listing);
