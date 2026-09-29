@@ -14,6 +14,7 @@ export const GRINBERG_ADMIN_EMAILS = [
   "fatima@grinbergmanagement.com",
   "liliana.torija@grinbergmanagement.com",
   "jerika.justo@grinbergmanagement.com",
+  "garygrinberg@grinbergmanagement.com",
 ] as const;
 
 const OFFICE = new Set<string>(GRINBERG_ADMIN_EMAILS);
