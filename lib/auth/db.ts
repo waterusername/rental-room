@@ -26,6 +26,7 @@ import type {
   UnitShareRecord,
   UserRecord,
 } from "./types.ts";
+import { COMPLETED_RENTAL_SEEDS, type CompletedRental, type CompletedRentalDraft } from "../completed-rentals.ts";
 import { GRINBERG_ADMIN_EMAILS } from "./staff.ts";
 import { BILLING_STATUSES, ROLES } from "./types.ts";
 
@@ -103,6 +104,21 @@ const SCHEMA = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_unit_shares_unit ON unit_shares (unit_id, created_by)`,
   `CREATE INDEX IF NOT EXISTS idx_unit_shares_creator ON unit_shares (created_by, created_at)`,
+  `CREATE TABLE IF NOT EXISTS app_meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS completed_rentals (
+    id TEXT PRIMARY KEY,
+    property TEXT NOT NULL,
+    company TEXT NOT NULL DEFAULT '',
+    notes TEXT NOT NULL DEFAULT '',
+    rent_cents INTEGER,
+    fee_to_collect_cents INTEGER,
+    other_amount_cents INTEGER,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
 ];
 
 const ADDED_USER_COLUMNS: { name: string; definition: string }[] = [
@@ -175,6 +191,7 @@ async function migrate(): Promise<void> {
   await db.execute(
     "UPDATE unit_shares SET unit_label = unit_id WHERE unit_label IS NULL OR unit_label = ''",
   );
+  await insertCompletedRentalSeed(db);
 }
 
 async function addColumn(
@@ -990,6 +1007,136 @@ export async function revokeUnitShare(input: {
     sql: `UPDATE unit_shares SET revoked_at = ?
       WHERE id = ? AND revoked_at IS NULL AND (? = 1 OR created_by = ?)`,
     args: [new Date().toISOString(), input.id, input.actorIsAdmin ? 1 : 0, input.actorUserId],
+  });
+  return Number(result.rowsAffected ?? 0) > 0;
+}
+
+const COMPLETED_RENTAL_SEED_KEY = "completed_rentals_seeded";
+
+async function insertCompletedRentalSeed(db: Client): Promise<void> {
+  const existing = await db.execute({
+    sql: "SELECT value FROM app_meta WHERE key = ?",
+    args: [COMPLETED_RENTAL_SEED_KEY],
+  });
+  if (existing.rows.length > 0) return;
+  await db.batch(
+    [
+      ...COMPLETED_RENTAL_SEEDS.map((row) => ({
+        sql: `INSERT OR IGNORE INTO completed_rentals (
+          id, property, company, notes, rent_cents, fee_to_collect_cents, other_amount_cents, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          row.id,
+          row.property,
+          row.company,
+          row.notes,
+          row.rentCents,
+          row.feeToCollectCents,
+          row.otherAmountCents,
+          row.createdAt,
+          row.createdAt,
+        ],
+      })),
+      {
+        sql: "INSERT OR IGNORE INTO app_meta (key, value) VALUES (?, ?)",
+        args: [COMPLETED_RENTAL_SEED_KEY, "1"],
+      },
+    ],
+    "write",
+  );
+}
+
+export async function ensureCompletedRentalSeed(): Promise<void> {
+  await ensureSchema();
+  await insertCompletedRentalSeed(getClient());
+}
+
+function centsValue(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const cents = Number(value);
+  return Number.isFinite(cents) ? cents : null;
+}
+
+function completedRentalFromRow(row: Record<string, unknown>): CompletedRental {
+  return {
+    id: String(row.id),
+    property: String(row.property),
+    company: String(row.company ?? ""),
+    notes: String(row.notes ?? ""),
+    rentCents: centsValue(row.rent_cents),
+    feeToCollectCents: centsValue(row.fee_to_collect_cents),
+    otherAmountCents: centsValue(row.other_amount_cents),
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
+export async function listCompletedRentals(): Promise<CompletedRental[]> {
+  await ensureSchema();
+  const result = await getClient().execute(
+    "SELECT * FROM completed_rentals ORDER BY created_at ASC, property ASC",
+  );
+  return result.rows.map((row) => completedRentalFromRow(row as unknown as Record<string, unknown>));
+}
+
+export async function findCompletedRental(id: string): Promise<CompletedRental | null> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: "SELECT * FROM completed_rentals WHERE id = ?",
+    args: [id],
+  });
+  const row = result.rows[0];
+  return row ? completedRentalFromRow(row as unknown as Record<string, unknown>) : null;
+}
+
+export async function insertCompletedRental(input: CompletedRentalDraft): Promise<CompletedRental> {
+  await ensureSchema();
+  const now = new Date().toISOString();
+  const rental: CompletedRental = { id: randomUUID(), ...input, createdAt: now, updatedAt: now };
+  await getClient().execute({
+    sql: `INSERT INTO completed_rentals (
+      id, property, company, notes, rent_cents, fee_to_collect_cents, other_amount_cents, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      rental.id,
+      rental.property,
+      rental.company,
+      rental.notes,
+      rental.rentCents,
+      rental.feeToCollectCents,
+      rental.otherAmountCents,
+      rental.createdAt,
+      rental.updatedAt,
+    ],
+  });
+  return rental;
+}
+
+export async function updateCompletedRental(id: string, input: CompletedRentalDraft): Promise<boolean> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: `UPDATE completed_rentals
+      SET property = ?, company = ?, notes = ?, rent_cents = ?, fee_to_collect_cents = ?, other_amount_cents = ?, updated_at = ?
+      WHERE id = ?`,
+    args: [
+      input.property,
+      input.company,
+      input.notes,
+      input.rentCents,
+      input.feeToCollectCents,
+      input.otherAmountCents,
+      new Date().toISOString(),
+      id,
+    ],
+  });
+  return Number(result.rowsAffected ?? 0) > 0;
+}
+
+export async function deleteCompletedRental(id: string): Promise<boolean> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: "DELETE FROM completed_rentals WHERE id = ?",
+    args: [id],
   });
   return Number(result.rowsAffected ?? 0) > 0;
 }

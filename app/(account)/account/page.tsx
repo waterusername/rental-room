@@ -40,9 +40,14 @@ export default async function AccountPage() {
           Billing
         </Link>
         {session.role === "admin" ? (
-          <Link href="/admin" className="text-accent">
-            Broker desk
-          </Link>
+          <>
+            <Link href="/admin" className="text-accent">
+              Broker desk
+            </Link>
+            <Link href="/admin/completed" className="text-accent">
+              Completed rentals
+            </Link>
+          </>
         ) : null}
       </div>
     </>
