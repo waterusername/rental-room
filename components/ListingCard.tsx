@@ -2,12 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { Chip } from "./Chip";
 import { listingSqft } from "@/lib/floor-plan";
+import { displayedStatus, type BoardSectionId } from "@/lib/board";
 import {
   bathCount,
   bedCount,
   formatDate,
   rentSummary,
-  statusLabel,
   statusTone,
   unitLabel,
 } from "@/lib/format";
@@ -17,12 +17,16 @@ import type { Listing } from "@/lib/types";
 export function ListingCard({
   listing,
   photo,
+  section,
 }: {
   listing: Listing;
   photo: ExteriorPhoto | null;
+  section?: BoardSectionId;
 }) {
   const name = `${listing.address}, ${unitLabel(listing.unit)}`;
   const facts = unitFacts(listing);
+  const label = displayedStatus(listing.status, section);
+  const tone = statusTone(section === "reserved" ? "reserved" : section === "coming-up" ? "turnover" : listing.status);
   return (
     <li>
       <Link
@@ -64,7 +68,7 @@ export function ListingCard({
         ) : null}
         <div className={photo ? "flex flex-1 flex-col p-4" : "contents"}>
           <div className="flex items-start justify-between gap-3">
-            <Chip tone={statusTone(listing.status)}>{statusLabel(listing.status)}</Chip>
+            <Chip tone={tone}>{label}</Chip>
             {listing.zip ? (
               <span className="text-xs font-semibold text-muted">{listing.zip}</span>
             ) : null}

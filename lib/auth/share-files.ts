@@ -1,4 +1,4 @@
-import { getListing } from "@/lib/inventory";
+import { findListing, isReservedListing } from "@/lib/inventory";
 import { presentListing } from "@/lib/unit-view";
 import type { Listing } from "@/lib/types";
 import { readPublicImage } from "./public-asset";
@@ -29,8 +29,8 @@ async function readSharedUnitImage(
 ): Promise<{ body: Buffer; contentType: string } | null> {
   const share = await readActiveShare(token);
   if (!share) return null;
-  const listing = getListing(share.unitId);
-  if (!listing) return null;
+  const listing = findListing(share.unitId);
+  if (!listing || isReservedListing(listing)) return null;
   const src = select(listing);
   if (!src) return null;
   return readPublicImage(src);

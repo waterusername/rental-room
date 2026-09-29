@@ -1,8 +1,12 @@
 import raw from "@/data/rental-listings.json";
+import { boardSectionFor, groupBoardListings, isReservedListing as listingIsReserved } from "./board";
+import type { BoardGroup, BoardSectionId } from "./board";
 import { CATEGORY_ORDER } from "./categories";
 import { addressKey, unitKey } from "./match";
 import { assertApartmentExteriors } from "./street-view";
 import type { Category, InventoryFile, Listing, TrackerRow } from "./types";
+
+export type { BoardGroup, BoardSectionId };
 
 export { CATEGORY_ORDER, categoryMeta } from "./categories";
 
@@ -48,6 +52,38 @@ export function allListings(): Listing[] {
 
 export function getListing(id: string): Listing | undefined {
   return allListings().find((listing) => listing.id === id);
+}
+
+const reservedIds: ReadonlySet<string> = new Set(inventory.listings.reserved.map((listing) => listing.id));
+
+export function routableListings(): Listing[] {
+  const seen = new Set<string>();
+  const rows: Listing[] = [];
+  for (const listing of [...allListings(), ...inventory.listings.reserved]) {
+    if (seen.has(listing.id)) continue;
+    seen.add(listing.id);
+    rows.push(listing);
+  }
+  return rows;
+}
+
+export function findListing(id: string): Listing | undefined {
+  return routableListings().find((listing) => listing.id === id);
+}
+
+export function isReservedListing(listing: Listing): boolean {
+  return listingIsReserved(listing, reservedIds);
+}
+
+export function sectionFor(listing: Listing): BoardSectionId {
+  return boardSectionFor(listing, reservedIds);
+}
+
+/** Broker groups omit Reserved. Administrators can include that section. */
+export function apartmentBoardGroups(includeReserved: boolean): BoardGroup[] {
+  return groupBoardListings(inventory.listings.apartments, inventory.listings.reserved, {
+    includeReserved,
+  });
 }
 
 export function trackerFor(listing: Listing): TrackerRow | null {

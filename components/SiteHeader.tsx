@@ -46,7 +46,10 @@ export function SiteHeader({
         </div>
         <nav aria-label="Listing categories" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <ul className="flex min-w-max gap-2 pb-1">
-            {CATEGORY_NAV.map((item) => {
+            {(viewer.role === "admin"
+              ? [...CATEGORY_NAV, { href: "/reserved", label: "Reserved" }]
+              : CATEGORY_NAV
+            ).map((item) => {
               const current = pathname === item.href;
               return (
                 <li key={item.href}>

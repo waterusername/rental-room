@@ -2,7 +2,7 @@
   "source": {
     "name": "Available Apartments",
     "snapshotDate": "2026-09-23",
-    "note": "Public site lists the Available Apartments tab only. Other sheet tabs are not published."
+    "note": "The site reads this file, not the Google Sheet. Status Available is the Available section. Turnover In Progress or Turn Over In Progress is shown as Coming Up. Reserve or Reserved is administrators only, whether the row is in listings.apartments or listings.reserved. Other apartment statuses stay in Available."
   },
   "contact": {
     "applyEmail": "ApplyGrinberg@gmail.com",
