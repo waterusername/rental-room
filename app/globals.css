@@ -72,3 +72,25 @@ body {
 .unit-card:hover .unit-photo-badge {
   opacity: 0;
 }
+
+/* Modal dialogs stay display:none until [open]. showModal() uses the top layer. */
+.exterior-zoom[open] {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #0e1a16;
+  color: #fff;
+  overflow: hidden;
+}
+
+.exterior-zoom::backdrop {
+  background: rgba(14, 26, 22, 0.88);
+}
