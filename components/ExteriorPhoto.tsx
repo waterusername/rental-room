@@ -140,6 +140,7 @@ function ExteriorZoom({ src, alt, onClose }: { src: string; alt: string; onClose
   useLayoutEffect(() => {
     const stage = stageRef.current;
     const photo = photoRef.current;
+    const dialog = dialogRef.current;
     if (!stage || !photo) return;
     fitPhoto();
     const observer = new ResizeObserver(() => fitPhoto());
@@ -167,12 +168,12 @@ function ExteriorZoom({ src, alt, onClose }: { src: string; alt: string; onClose
       }
     };
     stage.addEventListener("wheel", onWheel, { passive: false });
-    dialogRef.current?.addEventListener("keydown", onKey);
+    dialog?.addEventListener("keydown", onKey);
     return () => {
       observer.disconnect();
       photo.removeEventListener("load", fitPhoto);
       stage.removeEventListener("wheel", onWheel);
-      dialogRef.current?.removeEventListener("keydown", onKey);
+      dialog?.removeEventListener("keydown", onKey);
     };
   }, [commit, fitPhoto, zoomFromCenter]);
 

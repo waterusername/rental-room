@@ -72,5 +72,6 @@ export function stepZoom(scale: number, direction: 1 | -1): number {
 
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return 0;
-  return Math.min(max, Math.max(min, value));
+  const next = Math.min(max, Math.max(min, value));
+  return next === 0 ? 0 : next;
 }
