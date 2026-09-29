@@ -98,6 +98,7 @@ Grinberg office accounts stay complimentary and are never billed. Creating or sa
 - fatima@grinbergmanagement.com
 - liliana.torija@grinbergmanagement.com
 - jerika.justo@grinbergmanagement.com
+- garygrinberg@grinbergmanagement.com
 
 Charging is optional until the keys exist. If `STRIPE_SECRET_KEY` or `STRIPE_PRICE_ID` is missing, billing status is stored but ignored and every active account can browse. Administrators can always browse.
 

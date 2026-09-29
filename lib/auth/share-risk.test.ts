@@ -67,10 +67,20 @@ test("grinberg office emails browse without a subscription", () => {
   assert.equal(isGrinbergAdminEmail("fatima@grinbergmanagement.com"), true);
   assert.equal(isGrinbergAdminEmail("liliana.torija@grinbergmanagement.com"), true);
   assert.equal(isGrinbergAdminEmail("jerika.justo@grinbergmanagement.com"), true);
+  assert.equal(isGrinbergAdminEmail("garygrinberg@grinbergmanagement.com"), true);
+  assert.equal(isGrinbergAdminEmail("GaryGrinberg@GrinbergManagement.com"), true);
+  assert.equal(isGrinbergAdminEmail("gary@grinbergmanagement.com"), false);
   assert.equal(isGrinbergAdminEmail("broker@example.com"), false);
   assert.equal(
     canBrowseListings(
       { role: "broker", billingStatus: "payment_required", email: "daniel@grinbergmanagement.com" },
+      true,
+    ),
+    true,
+  );
+  assert.equal(
+    canBrowseListings(
+      { role: "broker", billingStatus: "payment_required", email: "garygrinberg@grinbergmanagement.com" },
       true,
     ),
     true,
