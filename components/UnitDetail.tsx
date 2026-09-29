@@ -174,7 +174,7 @@ export function UnitDetail({
             <Fact label="Rent" value="Not listed" />
           ) : null}
           <Fact label="Status" value={statusLabel(listing.status)} />
-          <Fact label="Zip" value={listing.zip ?? "Not listed"} />
+          {listing.zip ? <Fact label="Zip" value={listing.zip} /> : null}
           {listing.unitType ? <Fact label="Unit type" value={listing.unitType} /> : null}
         </dl>
         {note ? (
