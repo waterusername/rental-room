@@ -55,9 +55,58 @@ export function UnitDetail({
       </p>
       {notice}
 
-      <GrinbergNotice className="mt-6" />
+      <section className="mt-6" aria-labelledby="facts-heading">
+        <h2 id="facts-heading" className="font-serif text-2xl font-semibold">
+          Details
+        </h2>
+        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {beds != null ? <Fact label="Bedrooms" value={beds === 0 ? "Studio" : String(beds)} /> : null}
+          {baths != null ? <Fact label="Bathrooms" value={String(baths)} /> : null}
+          {washer ? <Fact label="Washer/dryer" value={washer} /> : null}
+          {listing.utilitiesIncluded ? (
+            <Fact label="Utilities" value={utilitiesLabel(listing.utilitiesIncluded)} />
+          ) : null}
+          {nycha ? <Fact label="NYCHA" value={nycha} /> : null}
+          {hpd ? <Fact label="HPD / Trust Fund" value={hpd} /> : null}
+          {listing.minRent != null ? <Fact label="Min rent" value={formatMoney(listing.minRent)} /> : null}
+          {listing.targetRent != null ? <Fact label="Target rent" value={formatMoney(listing.targetRent)} /> : null}
+          {listing.potentialRent != null ? (
+            <Fact label="Potential rent" value={formatMoney(listing.potentialRent)} />
+          ) : null}
+          {listing.minRent == null && listing.targetRent == null && listing.potentialRent == null ? (
+            <Fact label="Rent" value="Not listed" />
+          ) : null}
+          <Fact label="Status" value={statusLabel(listing.status)} />
+          {listing.zip ? <Fact label="Zip" value={listing.zip} /> : null}
+          {listing.unitType ? <Fact label="Unit type" value={listing.unitType} /> : null}
+        </dl>
+        {note ? (
+          <p className="mt-4 whitespace-pre-wrap rounded-lg border border-line bg-panel-2 px-4 py-4 text-sm leading-6">
+            {note}
+          </p>
+        ) : null}
+        <div className="mt-5 flex flex-wrap gap-3">
+          <a
+            href={applyHref(inventory.contact.applyEmail, listing)}
+            className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
+          >
+            Apply by email
+          </a>
+          {inventory.contact.phones
+            .filter((phone) => !isNamedPersonPhone(phone))
+            .map((phone) => (
+              <a
+                key={phone.number}
+                href={telHref(phone.number)}
+                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline"
+              >
+                Call {phone.label}
+              </a>
+            ))}
+        </div>
+      </section>
 
-      <section className="mt-6" aria-labelledby="tour-heading">
+      <section className="mt-8" aria-labelledby="tour-heading">
         <h2 id="tour-heading" className="font-serif text-2xl font-semibold">
           Virtual tour
         </h2>
@@ -152,56 +201,7 @@ export function UnitDetail({
         </section>
       ) : null}
 
-      <section className="mt-8" aria-labelledby="facts-heading">
-        <h2 id="facts-heading" className="font-serif text-2xl font-semibold">
-          Details
-        </h2>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {beds != null ? <Fact label="Bedrooms" value={beds === 0 ? "Studio" : String(beds)} /> : null}
-          {baths != null ? <Fact label="Bathrooms" value={String(baths)} /> : null}
-          {washer ? <Fact label="Washer/dryer" value={washer} /> : null}
-          {listing.utilitiesIncluded ? (
-            <Fact label="Utilities" value={utilitiesLabel(listing.utilitiesIncluded)} />
-          ) : null}
-          {nycha ? <Fact label="NYCHA" value={nycha} /> : null}
-          {hpd ? <Fact label="HPD / Trust Fund" value={hpd} /> : null}
-          {listing.minRent != null ? <Fact label="Min rent" value={formatMoney(listing.minRent)} /> : null}
-          {listing.targetRent != null ? <Fact label="Target rent" value={formatMoney(listing.targetRent)} /> : null}
-          {listing.potentialRent != null ? (
-            <Fact label="Potential rent" value={formatMoney(listing.potentialRent)} />
-          ) : null}
-          {listing.minRent == null && listing.targetRent == null && listing.potentialRent == null ? (
-            <Fact label="Rent" value="Not listed" />
-          ) : null}
-          <Fact label="Status" value={statusLabel(listing.status)} />
-          {listing.zip ? <Fact label="Zip" value={listing.zip} /> : null}
-          {listing.unitType ? <Fact label="Unit type" value={listing.unitType} /> : null}
-        </dl>
-        {note ? (
-          <p className="mt-4 whitespace-pre-wrap rounded-lg border border-line bg-panel-2 px-4 py-4 text-sm leading-6">
-            {note}
-          </p>
-        ) : null}
-        <div className="mt-5 flex flex-wrap gap-3">
-          <a
-            href={applyHref(inventory.contact.applyEmail, listing)}
-            className="inline-flex min-h-11 items-center rounded-full bg-accent px-4 text-sm font-semibold text-white no-underline hover:bg-accent-hover"
-          >
-            Apply by email
-          </a>
-          {inventory.contact.phones
-            .filter((phone) => !isNamedPersonPhone(phone))
-            .map((phone) => (
-              <a
-                key={phone.number}
-                href={telHref(phone.number)}
-                className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline"
-              >
-                Call {phone.label}
-              </a>
-            ))}
-        </div>
-      </section>
+      <GrinbergNotice className="mt-8" />
     </article>
   );
 }
