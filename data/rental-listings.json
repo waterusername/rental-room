@@ -1009,8 +1009,13 @@
         "hpdTrustFund": null,
         "utilitiesIncluded": null,
         "washerDryer": null,
-        "tourReady": null,
-        "tours": [],
+        "tourReady": "DONE",
+        "tours": [
+          {
+            "url": "https://my.matterport.com/show/?m=sFhs1wC31mZ",
+            "label": null
+          }
+        ],
         "officeNotes": null,
         "reservationDate": null,
         "daysSinceReservation": null,
