@@ -1,4 +1,4 @@
-import { statusLabel } from "./format";
+import { bedCount, statusLabel } from "./format";
 import type { Listing } from "./types";
 
 /**
@@ -85,6 +85,30 @@ export function displayedStatus(status: string, section?: BoardSectionId): strin
   return statusLabel(status);
 }
 
+const textCompare = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
+
+/** Unknown bedroom counts sort after every known count, including studios. */
+function bedroomRank(listing: Listing): number {
+  const beds = bedCount(listing);
+  if (beds == null || !Number.isFinite(beds)) return Number.POSITIVE_INFINITY;
+  return beds;
+}
+
+/**
+ * Studios (0 bedrooms) first, then 1, 2, 3, and so on.
+ * Same bedroom count is ordered by address, then unit.
+ */
+export function compareApartmentsByBedrooms(a: Listing, b: Listing): number {
+  const left = bedroomRank(a);
+  const right = bedroomRank(b);
+  if (left !== right) return left > right ? 1 : -1;
+  const address = textCompare.compare(a.address, b.address);
+  if (address !== 0) return address;
+  const unit = textCompare.compare(a.unit, b.unit);
+  if (unit !== 0) return unit;
+  return textCompare.compare(a.id, b.id);
+}
+
 export function groupBoardListings(
   apartments: Listing[],
   reserved: Listing[],
@@ -110,7 +134,7 @@ export function groupBoardListings(
       id: section.id,
       title: section.title,
       lede: section.lede,
-      listings: buckets[section.id],
+      listings: buckets[section.id].sort(compareApartmentsByBedrooms),
     }),
   );
 }

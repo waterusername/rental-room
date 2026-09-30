@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
 import {
+  compareApartmentsByBedrooms,
   displayedStatus,
   groupBoardListings,
   isReservedListing,
   statusBoardSection,
 } from "./board.ts";
+import { bedCount } from "./format.ts";
 import type { Listing } from "./types.ts";
 
 function listing(partial: Pick<Listing, "id" | "status"> & Partial<Listing>): Listing {
@@ -142,4 +144,99 @@ test("the published snapshot hides reserved units from brokers and labels turnov
   for (const item of reserved.listings) {
     assert.equal(brokerIds.has(item.id), false, item.id);
   }
+  for (const group of [...broker, ...admin]) {
+    assertBedroomOrder(group.listings, group.id);
+  }
+  assert.equal(bedCount(available.listings[0]!), 0);
 });
+
+test("apartments sort by bedroom count, studios first, then address and unit", () => {
+  const apartments = [
+    listing({
+      id: "two-late",
+      status: "Available",
+      address: "20 Oak Street",
+      unit: "Unit 2",
+      unitType: "2B/1B",
+      bedrooms: 2,
+    }),
+    listing({
+      id: "one-b",
+      status: "Available",
+      address: "10 Oak Street",
+      unit: "Unit 10",
+      unitType: "1B/1B",
+      bedrooms: 1,
+    }),
+    listing({
+      id: "studio-late",
+      status: "Available",
+      address: "9 Pine Avenue",
+      unit: "Unit 2",
+      unitType: "0B/1B",
+      bedrooms: null,
+    }),
+    listing({
+      id: "studio-early",
+      status: "Available",
+      address: "2 Pine Avenue",
+      unit: "Unit 1",
+      unitType: "Studio",
+      bedrooms: 0,
+    }),
+    listing({
+      id: "one-a",
+      status: "Available",
+      address: "10 Oak Street",
+      unit: "Unit 2",
+      unitType: "1BR/1BA",
+      bedrooms: null,
+    }),
+    listing({
+      id: "unknown",
+      status: "Available",
+      address: "1 Mystery Road",
+      unit: "Unit 1",
+      unitType: "",
+      bedrooms: null,
+    }),
+    listing({
+      id: "three",
+      status: "Turn Over In Progress",
+      address: "4 Elm Street",
+      unit: "Unit 1",
+      unitType: "3B/1B",
+      bedrooms: 3,
+    }),
+    listing({
+      id: "studio-coming",
+      status: "Turnover In Progress",
+      address: "1 Elm Street",
+      unit: "Unit 1",
+      unitType: "0BR/1BA",
+      bedrooms: null,
+    }),
+  ];
+
+  const broker = groupBoardListings(apartments, [], { includeReserved: false });
+  assert.deepEqual(
+    broker.find((group) => group.id === "available")?.listings.map((item) => item.id),
+    ["studio-early", "studio-late", "one-a", "one-b", "two-late", "unknown"],
+  );
+  assert.deepEqual(
+    broker.find((group) => group.id === "coming-up")?.listings.map((item) => item.id),
+    ["studio-coming", "three"],
+  );
+  assert.ok(compareApartmentsByBedrooms(apartments[3]!, apartments[2]!) < 0);
+});
+
+function assertBedroomOrder(listings: Listing[], label: string) {
+  for (let i = 1; i < listings.length; i++) {
+    const previous = listings[i - 1]!;
+    const current = listings[i]!;
+    assert.ok(
+      compareApartmentsByBedrooms(previous, current) <= 0,
+      `${label}: ${previous.id} should come before ${current.id}`,
+    );
+  }
+}
