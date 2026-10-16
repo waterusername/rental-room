@@ -145,11 +145,21 @@ Use Stripe test keys until a real charge should go through. These variables stil
 4. A row in `listings.reserved` is Reserved even if its status text is different. The same unit may also remain in `listings.apartments`; it is still listed only under Reserved. `listings.commercial`, `listings.garages`, `listings.storages`, `listings.pipeline`, and `listings.residentialTracker` stay in the file so the shape is stable. Those tabs are not pages.
 5. Restart the dev server, or redeploy. The file is imported at build time.
 
-Rows from other tabs are not added as cards. The current snapshot has 39 apartments, plus any Reserved rows in `listings.reserved`.
+Rows from other tabs are not added as cards. The current snapshot has 35 apartments, plus any Reserved rows in `listings.reserved`.
 
 `contact.applyEmail` is the apply mailto on each unit. The office phone is a call link. Dimitry’s number is plain text in the footer, not a call button.
 
 Office notes are shown as written in the file. Edit a note in the JSON if it should not be public.
+
+## Daily sync from the office sheet
+
+The source is the "Available Apartments" tab of the office Google Sheet (Available Apartments Broker list). Once a day:
+
+1. Export that tab as CSV (Sheets connector or File > Download > CSV).
+2. `node scripts/sync-from-sheet.mjs path/to.csv --dry-run` to preview, then without `--dry-run` to write.
+   Units not on the sheet are removed from `listings.apartments`; new rows are added; existing rows keep id, layout, sqft, and tour labels. `listings.reserved` and Turso claims / completed rentals are untouched.
+3. If addresses were added, `npm run streetview`.
+4. Test, build, PR to `main`, deploy to production.
 
 ## Apartment exterior photos
 
