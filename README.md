@@ -158,6 +158,7 @@ The source is the "Available Apartments" tab of the office Google Sheet (Availab
 1. Export that tab as CSV (Sheets connector or File > Download > CSV).
 2. `node scripts/sync-from-sheet.mjs path/to.csv --dry-run` to preview, then without `--dry-run` to write.
    Units not on the sheet are removed from `listings.apartments`; new rows are added; existing rows keep id, layout, sqft, and tour labels. `listings.reserved` and Turso claims / completed rentals are untouched.
+   The script does not edit `listings.reserved`. When a removed unit now sits on the sheet's "Reserved Apartments" tab, move its row into `listings.reserved` by hand (status `RESERVED`, reservation date from that tab) so administrators still see it under Reserved.
 3. If addresses were added, `npm run streetview`.
 4. Test, build, PR to `main`, deploy to production.
 

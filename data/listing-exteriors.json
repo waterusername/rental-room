@@ -273,6 +273,13 @@
       "alt": "Exterior of 402-404 Jersey Street, Staten Island",
       "credit": "Building exterior",
       "objectPosition": "center 40%"
+    },
+    "apt-661-bay-street-unit-2": {
+      "src": "/exteriors/apt-663-bay-street-unit-2.jpg",
+      "kind": "photo",
+      "alt": "Exterior of 663 Bay Street, Staten Island",
+      "credit": "Building exterior",
+      "objectPosition": "center 40%"
     }
   }
 }
