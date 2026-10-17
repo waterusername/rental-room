@@ -1,7 +1,7 @@
 {
   "source": {
     "name": "Available Apartments",
-    "snapshotDate": "2026-10-16",
+    "snapshotDate": "2026-10-17",
     "note": "The site reads this file, not the Google Sheet. Status Available is the Available section. Turnover In Progress or Turn Over In Progress is shown as Coming Up. Reserve or Reserved is administrators only, whether the row is in listings.apartments or listings.reserved. Other apartment statuses stay in Available."
   },
   "contact": {
@@ -304,7 +304,7 @@
         "targetRent": 3550,
         "potentialRent": null,
         "zip": "10303",
-        "status": "Available",
+        "status": "RESERVED",
         "nycha": "YES",
         "hpdTrustFund": "YES",
         "utilitiesIncluded": "NO",
