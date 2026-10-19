@@ -31,6 +31,9 @@ export function SiteHeader({
             </p>
             {viewer.role === "admin" ? (
               <>
+                <Link href="/admin/showings" className="text-sm font-semibold text-accent no-underline">
+                  Showings
+                </Link>
                 <Link href="/admin/completed" className="text-sm font-semibold text-accent no-underline">
                   Completed
                 </Link>
