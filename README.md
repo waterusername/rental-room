@@ -159,6 +159,7 @@ The source is the "Available Apartments" tab of the office Google Sheet (Availab
 2. `node scripts/sync-from-sheet.mjs path/to.csv --dry-run` to preview, then without `--dry-run` to write.
    Units not on the sheet are removed from `listings.apartments`; new rows are added; existing rows keep id, layout, sqft, and tour labels. `listings.reserved` and Turso claims / completed rentals are untouched.
    The script does not edit `listings.reserved`. When a removed unit now sits on the sheet's "Reserved Apartments" tab, move its row into `listings.reserved` by hand (status `RESERVED`, reservation date from that tab) so administrators still see it under Reserved.
+   A unit whose status on the Available tab says "Application In Process" (for example "Application In Process (not yet approved)") is written as status `Application In Process`. It stays broker-visible in the Available section with a tan "Application In Process" badge (same chip style as Coming Up), even if the unit is also listed on the "Reserved Apartments" tab. Do not mark it `RESERVED` and do not copy it into `listings.reserved`; the script prints a warning if it is already there. Once the application is approved and the sheet says Reserved, the normal Reserved rules apply.
 3. If addresses were added, `npm run streetview`.
 4. Test, build, PR to `main`, deploy to production.
 

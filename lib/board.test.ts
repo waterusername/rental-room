@@ -8,7 +8,7 @@ import {
   isReservedListing,
   statusBoardSection,
 } from "./board.ts";
-import { bedCount } from "./format.ts";
+import { bedCount, statusTone } from "./format.ts";
 import type { Listing } from "./types.ts";
 
 function listing(partial: Pick<Listing, "id" | "status"> & Partial<Listing>): Listing {
@@ -240,3 +240,29 @@ function assertBedroomOrder(listings: Listing[], label: string) {
     );
   }
 }
+
+test("Application In Process stays broker-visible with its own label", () => {
+  for (const status of [
+    "Application In Process",
+    "Application In Process (not yet approved)",
+    "application in process",
+  ]) {
+    assert.equal(statusBoardSection(status), "available", status);
+    assert.equal(displayedStatus(status), "Application In Process", status);
+  }
+  const apartments = [listing({ id: "pending", status: "Application In Process (not yet approved)" })];
+  const broker = groupBoardListings(apartments, [], { includeReserved: false });
+  const available = broker.find((group) => group.id === "available");
+  assert.ok(available);
+  assert.deepEqual(available.listings.map((item) => item.id), ["pending"]);
+  assert.equal(statusTone("Application In Process"), "wait");
+
+  const raw = JSON.parse(fs.readFileSync(new URL("../data/rental-listings.json", import.meta.url), "utf8"));
+  const coonley = raw.listings.apartments.find((item: Listing) => item.id === "apt-1-coonley-court-unit-1");
+  assert.equal(coonley?.status, "Application In Process");
+  const live = groupBoardListings(raw.listings.apartments, raw.listings.reserved, { includeReserved: false });
+  assert.equal(
+    live.find((group) => group.id === "available")?.listings.some((item) => item.id === "apt-1-coonley-court-unit-1"),
+    true,
+  );
+});
