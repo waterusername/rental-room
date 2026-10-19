@@ -2,7 +2,7 @@
 
 A vacancy board for Grinberg apartments. It follows the browse-and-detail feel of a portfolio deal room, for rental units rather than development assemblages.
 
-Listings, tours, rents, and office notes come from `data/rental-listings.json`. The site does not call Google Sheets. Apartment `status` in that file selects the board section: Available or Coming Up (turnover). Reserve, Reserved, and Turnover-reserved units, and every row in `listings.reserved`, stay in the file and are not shown to brokers or administrators.
+Listings, tours, rents, and office notes come from `data/rental-listings.json`. The site does not call Google Sheets. Available is the top section. Coming Up is below it: any apartment with no Matterport tour, plus turnover statuses. Reserve, Reserved, and Turnover-reserved units, and every row in `listings.reserved`, stay in the file and are not shown to brokers or administrators.
 
 The boards are private. A visitor who is not signed in sees a login page and no listings. Brokers sign in with email and password. Administrators manage those accounts, review sign-in history, and can require a Stripe subscription.
 
@@ -136,8 +136,9 @@ Use Stripe test keys until a real charge should go through. These variables stil
 1. Replace `data/rental-listings.json` with the new snapshot.
 2. Keep the same top-level shape: `source`, `contact`, and `listings`.
 3. Apartment `status` selects the section. Matching is case-insensitive and treats `Turn Over` and `Turnover` as the same word.
-   - `Available` → **Available**, shown to brokers and administrators.
-   - `Turnover In Progress`, `Turn Over In Progress`, or other turnover wording that does not also say reserved → **Coming Up**. The board does not use the raw sheet phrase as the section title. Brokers and administrators both see it.
+   - `Available` → **Available**, shown to brokers and administrators, when the unit has a Matterport tour.
+   - No Matterport link → **Coming Up**, whatever the status cell says (including Available, credit check, or Application In Process). Coming Up is rendered under Available. The next time the unit has a Matterport tour it moves back to Available, unless the status itself is turnover.
+   - `Turnover In Progress`, `Turn Over In Progress`, or other turnover wording that does not also say reserved → **Coming Up**, even when a tour is already on the unit. The board does not use the raw sheet phrase as the section title. Brokers and administrators both see it.
    - `Reserve`, `Reserved`, `RESERVED`, `Reservation`, or `Turnover-reserved` (any wording with reserve, reserved, or reservation) → not shown. Brokers and administrators do not see these units on the board, in counts, in nav, or on a unit page, and cannot create a share link. An existing share link stops opening the unit. There is no Reserved section.
    - `Application In Process` stays in **Available** with that badge, even when the same text also matches reserved or the unit is listed in `listings.reserved`.
    - A broker can also mark an Available or Coming Up unit Reserved from the unit page or the card. That claim is stored in Turso (`unit_claims`), not written back into this JSON file. The unit leaves the site for every role.
@@ -157,10 +158,12 @@ The source is the "Available Apartments" tab of the office Google Sheet (Availab
 
 1. Export that tab as CSV (Sheets connector or File > Download > CSV).
 2. `node scripts/sync-from-sheet.mjs path/to.csv --dry-run` to preview, then without `--dry-run` to write.
+   Columns are matched by header name, not by letter. The current Available tab is Property, Unit, Unit Type, Min Rent, Target Rent, Zip, Status, NYCHA, HPD/TrustFund, Utilities Included, Washer/Dryer, VT READY, Virtual Tour Links, Office Notes, Sqft. Virtual Tour Links (column M, after the old duplicate column A was removed) is the tour URL. If that header appears twice, the later column is used. Sqft on the sheet is ignored; square footage still comes from the Matterport layout files.
    Units not on the sheet are removed from `listings.apartments`; new rows are added; existing rows keep id, layout, sqft, and tour labels. `listings.reserved` and Turso claims / completed rentals are untouched, and `listings.reserved` is not rendered.
    Do not copy the sheet's "Reserved Apartments" tab into `listings.apartments` or `listings.reserved`. A unit that leaves the Available tab for that Reserved tab is removed from `listings.apartments` and does not come back onto the site.
    Rows on the Available tab whose status says Reserve, Reserved, Reservation, or Turnover-reserved are omitted from `listings.apartments` and are not shown. The script prints them as `OMITTED RESERVED, not shown`.
-   A unit whose status on the Available tab says "Application In Process" (for example "Application In Process (not yet approved)") is written as status `Application In Process`. It stays in the Available section with a tan "Application In Process" badge (same chip style as Coming Up), even if the unit is also listed on the "Reserved Apartments" tab or already in `listings.reserved`. Do not mark it `RESERVED`. Once the application is approved and the sheet says Reserved, the sync omits it and the site stops showing it.
+   A row with no Matterport URL in Virtual Tour Links is stored with an empty tour list, which clears a tour that was saved before. The board puts that apartment in Coming Up, below Available. The script prints those rows as `COMING UP, no Matterport tour`. A later sync that includes a Matterport link moves the unit back to Available unless its status is turnover.
+   A unit whose status on the Available tab says "Application In Process" (for example "Application In Process (not yet approved)") is written as status `Application In Process`. With a Matterport tour it stays in the Available section with a tan "Application In Process" badge (same chip style as Coming Up), even if the unit is also listed on the "Reserved Apartments" tab or already in `listings.reserved`. Without a tour it is Coming Up. Do not mark it `RESERVED`. Once the application is approved and the sheet says Reserved, the sync omits it and the site stops showing it.
 3. If addresses were added, `npm run streetview`.
 4. Test, build, PR to `main`, deploy to production.
 
