@@ -8,16 +8,18 @@ import type { Listing } from "./types";
  *
  * - Available → Available, shown to brokers and administrators
  * - Turn Over / Turnover In Progress → Coming Up, shown to brokers and administrators
- * - Reserve / Reserved → Reserved, administrators only
+ * - Reserve / Reserved, including Turnover-reserved → not shown. Brokers and
+ *   administrators both skip these units: no board section, unit page, count, or nav.
  * - Application In Process (any wording with "application") → Available, shown to
  *   brokers and administrators with an "Application In Process" badge. This wins
- *   over a Reserved match in the same text, so a pending application stays visible.
+ *   over a Reserved match in the same text and over a `listings.reserved` row.
  *
  * Any other status (credit check, under initial development, blank) stays in
  * Available so it remains broker-visible, and the card keeps the sheet wording.
- * A row in `listings.reserved` is Reserved even when its status text differs.
+ * A row in `listings.reserved` is not rendered, even when its status text differs,
+ * unless that status is Application In Process.
  * A broker claim is not written into that file. Callers pass its unit id in
- * `extraReservedIds`, and it uses this same reserved bucket.
+ * `extraReservedIds`. A claim removes the unit from the site for every role.
  */
 
 export type BoardSectionId = "available" | "coming-up" | "reserved";
@@ -29,7 +31,7 @@ export type BoardGroup = {
   listings: Listing[];
 };
 
-export const BOARD_SECTIONS: readonly { id: BoardSectionId; title: string; lede: string }[] = [
+export const BOARD_SECTIONS: readonly { id: Exclude<BoardSectionId, "reserved">; title: string; lede: string }[] = [
   {
     id: "available",
     title: "Available",
@@ -39,11 +41,6 @@ export const BOARD_SECTIONS: readonly { id: BoardSectionId; title: string; lede:
     id: "coming-up",
     title: "Coming Up",
     lede: "Still turning over, so these units are not listed as Available.",
-  },
-  {
-    id: "reserved",
-    title: "Reserved",
-    lede: "Marked Reserve or Reserved on the sheet, or claimed by a broker. Only administrators see this section, and these units are not shared.",
   },
 ];
 
@@ -78,13 +75,19 @@ export function statusBoardSection(status: string): BoardSectionId {
   return "available";
 }
 
-export function boardSectionFor(listing: Listing, reservedIds: ReadonlySet<string>): BoardSectionId {
-  if (reservedIds.has(listing.id)) return "reserved";
-  return statusBoardSection(listing.status);
+/**
+ * Sheet reserved wording, a `listings.reserved` id, or a broker claim.
+ * Application In Process stays visible even when the same text or id also matches reserved.
+ */
+export function isReservedListing(listing: Listing, reservedIds: ReadonlySet<string>): boolean {
+  if (isApplicationInProcess(listing.status)) return false;
+  if (reservedIds.has(listing.id)) return true;
+  return statusBoardSection(listing.status) === "reserved";
 }
 
-export function isReservedListing(listing: Listing, reservedIds: ReadonlySet<string>): boolean {
-  return boardSectionFor(listing, reservedIds) === "reserved";
+export function boardSectionFor(listing: Listing, reservedIds: ReadonlySet<string>): BoardSectionId {
+  if (isReservedListing(listing, reservedIds)) return "reserved";
+  return statusBoardSection(listing.status);
 }
 
 /** Broker-facing label. Coming Up and Reserved replace the raw sheet wording. */
@@ -121,32 +124,33 @@ export function compareApartmentsByBedrooms(a: Listing, b: Listing): number {
   return textCompare.compare(a.id, b.id);
 }
 
+/** Available and Coming Up only. Reserved rows are dropped for every viewer. */
 export function groupBoardListings(
   apartments: Listing[],
   reserved: Listing[],
-  options: { includeReserved: boolean; extraReservedIds?: Iterable<string> },
+  options: { extraReservedIds?: Iterable<string> } = {},
 ): BoardGroup[] {
   const reservedIds = new Set(reserved.map((listing) => listing.id));
   if (options.extraReservedIds) {
     for (const id of options.extraReservedIds) reservedIds.add(id);
   }
-  const buckets: Record<BoardSectionId, Listing[]> = {
+  const buckets: Record<"available" | "coming-up", Listing[]> = {
     available: [],
     "coming-up": [],
-    reserved: [],
   };
   const seen = new Set<string>();
-  for (const listing of [...apartments, ...reserved]) {
+  for (const listing of apartments) {
     if (seen.has(listing.id)) continue;
     seen.add(listing.id);
-    buckets[boardSectionFor(listing, reservedIds)].push(listing);
+    if (isReservedListing(listing, reservedIds)) continue;
+    const section = statusBoardSection(listing.status);
+    if (section === "reserved") continue;
+    buckets[section].push(listing);
   }
-  return BOARD_SECTIONS.filter((section) => options.includeReserved || section.id !== "reserved").map(
-    (section) => ({
-      id: section.id,
-      title: section.title,
-      lede: section.lede,
-      listings: buckets[section.id].sort(compareApartmentsByBedrooms),
-    }),
-  );
+  return BOARD_SECTIONS.map((section) => ({
+    id: section.id,
+    title: section.title,
+    lede: section.lede,
+    listings: buckets[section.id].sort(compareApartmentsByBedrooms),
+  }));
 }

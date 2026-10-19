@@ -29,7 +29,7 @@ export async function generateMetadata({
   const listing = findListing(id);
   const claimed = listing ? await boardClaims() : null;
   const reserved = Boolean(listing && claimed && isReservedListing(listing, claimed.ids));
-  if (!listing || (reserved && session.role !== "admin")) {
+  if (!listing || reserved) {
     return { title: "Unit not found" };
   }
   return {
@@ -45,21 +45,16 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
 
   const session = await getCurrentSession();
   const claimed = await boardClaims();
-  const reserved = isReservedListing(listing, claimed.ids);
-  const isAdmin = session?.role === "admin";
-  if (reserved && !isAdmin) notFound();
+  if (isReservedListing(listing, claimed.ids)) notFound();
 
-  const canShare = Boolean(session && !session.mustResetPassword && viewerCanBrowse(session) && !reserved);
-  const canClaim = Boolean(
-    session?.role === "broker" && !session.mustResetPassword && viewerCanBrowse(session) && !reserved,
-  );
+  const canShare = Boolean(session && !session.mustResetPassword && viewerCanBrowse(session));
+  const canClaim = Boolean(session?.role === "broker" && !session.mustResetPassword && viewerCanBrowse(session));
   const unitTitle = `${listing.address}, ${unitLabel(listing.unit)}`;
 
   return (
     <UnitDetail
       listing={listing}
       section={sectionFor(listing, claimed.ids)}
-      claim={isAdmin ? (claimed.byUnit[listing.id] ?? null) : null}
       notice={
         <>
           {canShare ? <ShareUnitPanel unitId={listing.id} unitTitle={unitTitle} /> : null}

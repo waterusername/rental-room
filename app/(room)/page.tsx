@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 };
 
 const CLAIMED_NOTICE =
-  "That unit is marked Reserved. The office has the claim, and it is no longer on your board.";
+  "That unit is marked Reserved. The office has the claim, and it is no longer on the site.";
 
 export default async function HomePage({
   searchParams,
