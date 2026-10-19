@@ -7,15 +7,19 @@ import type { Listing } from "./types";
  * data/rental-listings.json is the source of truth (see README, "Refresh the listings").
  *
  * - Available → Available, shown to brokers and administrators
+ * - No Matterport tour → Coming Up, whatever the sheet status says. Adding a tour
+ *   moves the unit back to Available unless the status itself is turnover.
  * - Turn Over / Turnover In Progress → Coming Up, shown to brokers and administrators
  * - Reserve / Reserved, including Turnover-reserved → not shown. Brokers and
  *   administrators both skip these units: no board section, unit page, count, or nav.
- * - Application In Process (any wording with "application") → Available, shown to
- *   brokers and administrators with an "Application In Process" badge. This wins
- *   over a Reserved match in the same text and over a `listings.reserved` row.
+ * - Application In Process (any wording with "application") → Available when the
+ *   unit has a Matterport tour, shown to brokers and administrators with an
+ *   "Application In Process" badge. This wins over a Reserved match in the same
+ *   text and over a `listings.reserved` row. Without a tour it is Coming Up.
  *
  * Any other status (credit check, under initial development, blank) stays in
- * Available so it remains broker-visible, and the card keeps the sheet wording.
+ * Available when the unit has a Matterport tour, and the card keeps the sheet wording.
+ * Without a tour it is Coming Up.
  * A row in `listings.reserved` is not rendered, even when its status text differs,
  * unless that status is Application In Process.
  * A broker claim is not written into that file. Callers pass its unit id in
@@ -40,7 +44,7 @@ export const BOARD_SECTIONS: readonly { id: Exclude<BoardSectionId, "reserved">;
   {
     id: "coming-up",
     title: "Coming Up",
-    lede: "Still turning over, so these units are not listed as Available.",
+    lede: "No Matterport tour yet, or still turning over. This section is below Available.",
   },
 ];
 
@@ -48,6 +52,7 @@ const RESERVED_STATUS = /\breserv(?:e|ed|ation)\b/;
 const APPLICATION_STATUS = /\bapplication\b/;
 export const APPLICATION_IN_PROCESS = "Application In Process";
 const TURNOVER_STATUS = /turn\s*over/;
+const MATTERPORT_TOUR = /matterport\.com/i;
 
 function normalizeStatus(status: string): string {
   return status
@@ -63,6 +68,11 @@ function normalizeStatus(status: string): string {
 /** Sheet status "Application In Process (not yet approved)" and similar wording. */
 export function isApplicationInProcess(status: string): boolean {
   return APPLICATION_STATUS.test(normalizeStatus(status));
+}
+
+/** A real Matterport link. Any other URL, or none, leaves the unit in Coming Up. */
+export function hasMatterportTour(listing: Pick<Listing, "tours">): boolean {
+  return (listing.tours ?? []).some((tour) => MATTERPORT_TOUR.test(tour?.url ?? ""));
 }
 
 /** Map a sheet status string onto a board section. */
@@ -87,6 +97,7 @@ export function isReservedListing(listing: Listing, reservedIds: ReadonlySet<str
 
 export function boardSectionFor(listing: Listing, reservedIds: ReadonlySet<string>): BoardSectionId {
   if (isReservedListing(listing, reservedIds)) return "reserved";
+  if (!hasMatterportTour(listing)) return "coming-up";
   return statusBoardSection(listing.status);
 }
 
@@ -142,8 +153,7 @@ export function groupBoardListings(
   for (const listing of apartments) {
     if (seen.has(listing.id)) continue;
     seen.add(listing.id);
-    if (isReservedListing(listing, reservedIds)) continue;
-    const section = statusBoardSection(listing.status);
+    const section = boardSectionFor(listing, reservedIds);
     if (section === "reserved") continue;
     buckets[section].push(listing);
   }

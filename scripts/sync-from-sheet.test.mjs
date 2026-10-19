@@ -121,6 +121,31 @@ test("current Available Apartments headers map by name, with the tour link in co
   assert.equal("sqft" in apartments[0], false);
 });
 
+test("an empty Virtual Tour Links cell leaves the apartment without a tour", () => {
+  const { apartments } = readAvailableApartments(csv(CURRENT_HEADERS, [
+    {
+      Property: "116 Hillside Ave",
+      Unit: "Unit 1",
+      "Unit Type": "4Br/2BA",
+      "Min Rent": "",
+      "Target Rent": "3850",
+      Zip: "",
+      Status: "Available",
+      NYCHA: "YES",
+      "HPD/TrustFund": "YES",
+      "Utilities Included": "NO",
+      "Washer/Dryer": "YES",
+      "VT READY": "NO",
+      "Virtual Tour Links": "",
+      "Office Notes": "",
+      Sqft: "",
+    },
+  ]));
+  assert.equal(apartments.length, 1);
+  assert.equal(apartments[0].status, "Available");
+  assert.equal(apartments[0].tourUrl, null);
+});
+
 test("a duplicate Virtual Tour Links column does not steal the tour URL", () => {
   const headers = ["Virtual Tour Links", ...CURRENT_HEADERS];
   const columns = sheetColumns(headers);

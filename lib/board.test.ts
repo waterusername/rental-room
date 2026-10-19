@@ -5,6 +5,7 @@ import {
   compareApartmentsByBedrooms,
   displayedStatus,
   groupBoardListings,
+  hasMatterportTour,
   isReservedListing,
   statusBoardSection,
 } from "./board.ts";
@@ -27,7 +28,7 @@ function listing(partial: Pick<Listing, "id" | "status"> & Partial<Listing>): Li
     utilitiesIncluded: null,
     washerDryer: null,
     tourReady: null,
-    tours: [],
+    tours: [{ url: "https://my.matterport.com/show/?m=test", label: null }],
     officeNotes: null,
     reservationDate: null,
     daysSinceReservation: null,
@@ -132,12 +133,26 @@ test("the published snapshot hides reserved units and labels turnover as Coming 
   assert.equal(displayedStatus("RESERVED", "reserved"), "Reserved");
   assert.ok(available && available.listings.length > 0);
   assert.ok(comingUp && comingUp.listings.length > 0);
+  assert.ok(board.findIndex((group) => group.id === "coming-up") > board.findIndex((group) => group.id === "available"));
   for (const item of available.listings) {
+    assert.equal(hasMatterportTour(item), true, item.id);
     assert.equal(statusBoardSection(item.status), "available", item.id);
     assert.equal(shownIds.has(item.id), true);
   }
+  const noTourIds = [
+    "apt-116-hillside-ave-unit-1",
+    "apt-14-fancher-pl-unit-1",
+    "apt-128-port-richmond-ave-unir-3a",
+    "apt-124-alaska-st-unit-2-bsmt",
+    "apt-99-wright-st-unit-2",
+  ];
+  for (const id of noTourIds) {
+    assert.equal(comingUp.listings.some((item) => item.id === id), true, id);
+    assert.equal(available.listings.some((item) => item.id === id), false, id);
+  }
   for (const item of comingUp.listings) {
-    assert.equal(statusBoardSection(item.status), "coming-up", item.id);
+    const turnover = statusBoardSection(item.status) === "coming-up";
+    assert.equal(turnover || !hasMatterportTour(item), true, item.id);
     assert.equal(displayedStatus(item.status, "coming-up"), "Coming Up");
   }
   for (const item of raw.listings.reserved) {
@@ -244,6 +259,53 @@ function assertBedroomOrder(listings: Listing[], label: string) {
     );
   }
 }
+
+test("an apartment with no Matterport tour stays in Coming Up until it has one", () => {
+  const bare = listing({ id: "bare", status: "Available", address: "2 Bare Street", tours: [] });
+  const credit = listing({
+    id: "credit",
+    status: "Credit check Requires (CASH)",
+    address: "3 Bare Street",
+    tours: [],
+  });
+  const pending = listing({
+    id: "pending",
+    status: "Application In Process",
+    address: "4 Bare Street",
+    tours: [{ url: "https://example.com/not-matterport", label: null }],
+  });
+  const hidden = listing({ id: "hidden", status: "RESERVED", address: "5 Bare Street", tours: [] });
+  const toured = listing({ id: "toured", status: "Available", address: "1 Tour Street" });
+  const turnover = listing({ id: "turn", status: "Turnover In Progress", address: "9 Tour Street" });
+  const board = groupBoardListings([bare, credit, pending, hidden, toured, turnover], []);
+
+  assert.deepEqual(board.map((group) => group.id), ["available", "coming-up"]);
+  assert.ok(board.findIndex((group) => group.id === "coming-up") > board.findIndex((group) => group.id === "available"));
+  assert.deepEqual(
+    board.find((group) => group.id === "available")?.listings.map((item) => item.id),
+    ["toured"],
+  );
+  assert.deepEqual(
+    board.find((group) => group.id === "coming-up")?.listings.map((item) => item.id),
+    ["bare", "credit", "pending", "turn"],
+  );
+  assert.equal(hasMatterportTour(bare), false);
+  assert.equal(hasMatterportTour(toured), true);
+
+  const promoted = {
+    ...bare,
+    tours: [{ url: "https://my.matterport.com/show/?m=promoted", label: null }],
+  };
+  const next = groupBoardListings([promoted, turnover], []);
+  assert.deepEqual(
+    next.find((group) => group.id === "available")?.listings.map((item) => item.id),
+    ["bare"],
+  );
+  assert.deepEqual(
+    next.find((group) => group.id === "coming-up")?.listings.map((item) => item.id),
+    ["turn"],
+  );
+});
 
 test("Application In Process stays broker-visible with its own label", () => {
   for (const status of [

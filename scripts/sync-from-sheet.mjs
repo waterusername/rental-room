@@ -23,10 +23,16 @@
  *   tab into listings.apartments or listings.reserved.
  * - Existing units keep their id, address spelling, bedrooms/baths/notes/prospect.
  *   Sheet fields (type, rents, zip, status, flags, tour, office notes) are refreshed.
+ * - A sheet row with no Matterport URL in Virtual Tour Links is stored with no
+ *   tour. The board then shows it in Coming Up, below Available, whatever the
+ *   status cell says. A later sync that includes a Matterport link moves it back
+ *   to Available unless the status is turnover. An empty tour cell clears a
+ *   previously saved tour.
  * - A sheet status containing "Application" (e.g. "Application In Process (not yet
- *   approved)") is written as "Application In Process". The site keeps it in the
- *   Available section with an "Application In Process" badge, even if the unit is
- *   also on the Reserved Apartments tab or already in listings.reserved.
+ *   approved)") is written as "Application In Process". With a Matterport tour it
+ *   stays in Available with an "Application In Process" badge, even if the unit is
+ *   also on the Reserved Apartments tab or already in listings.reserved. Without
+ *   a tour it is Coming Up.
  * - Reserve, Reserved, Reservation, and Turnover-reserved (any wording with
  *   reserve/reserved/reservation, unless it also says application) are omitted.
  *   Those rows are not written into listings.apartments and are not shown.
@@ -211,7 +217,7 @@ function syncFromCsv(csvPath, { dryRun }) {
     if (old) {
       const tours = s.tourUrl
         ? [old.tours?.find((t) => t.url === s.tourUrl) ?? { url: s.tourUrl, label: null }]
-        : old.tours ?? [];
+        : [];
       const merged = { ...old, ...fields, tours };
       if (JSON.stringify(merged) !== JSON.stringify(old)) updated.push(`${old.address} ${old.unit}`);
       next.push(merged);
@@ -241,6 +247,10 @@ function syncFromCsv(csvPath, { dryRun }) {
   console.log(`UPDATED (${updated.length}):`); updated.forEach((x) => console.log("  ~ " + x));
   const applications = next.filter((l) => l.status === APPLICATION_IN_PROCESS).map((l) => `${l.address} ${l.unit}`);
   console.log(`APPLICATION IN PROCESS, broker-visible (${applications.length}):`); applications.forEach((x) => console.log("  * " + x));
+  const noTour = next
+    .filter((l) => !(l.tours ?? []).some((tour) => /matterport\.com/i.test(tour?.url ?? "")))
+    .map((l) => `${l.address} ${l.unit}`);
+  console.log(`COMING UP, no Matterport tour (${noTour.length}):`); noTour.forEach((x) => console.log("  * " + x));
   if (applicationConflicts.length) {
     console.log(`NOTE: Application In Process units are also in listings.reserved. The site still shows them; listings.reserved is not rendered:`);
     applicationConflicts.forEach((x) => console.log("  * " + x));
