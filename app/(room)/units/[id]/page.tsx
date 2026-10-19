@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ClaimUnitForm } from "@/components/ClaimUnitForm";
 import { ShareUnitPanel } from "@/components/ShareUnitPanel";
+import { ShowingLog } from "@/components/ShowingLog";
 import { UnitDetail } from "@/components/UnitDetail";
 import { viewerCanBrowse } from "@/lib/auth/config";
 import { getCurrentSession } from "@/lib/auth/guards";
+import { actorFromSession, listShowingsForActor } from "@/lib/auth/showings-service";
 import { displayedStatus } from "@/lib/board";
 import { boardClaims } from "@/lib/claim-unit";
 import { rentSummary, unitLabel } from "@/lib/format";
@@ -43,13 +45,16 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
   const listing = findListing(id);
   if (!listing) notFound();
 
-  const session = await getCurrentSession();
-  const claimed = await boardClaims();
+  const [session, claimed] = await Promise.all([getCurrentSession(), boardClaims()]);
   if (isReservedListing(listing, claimed.ids)) notFound();
 
-  const canShare = Boolean(session && !session.mustResetPassword && viewerCanBrowse(session));
-  const canClaim = Boolean(session?.role === "broker" && !session.mustResetPassword && viewerCanBrowse(session));
+  const canUseBoards = Boolean(session && !session.mustResetPassword && viewerCanBrowse(session));
+  const canClaim = Boolean(session?.role === "broker" && canUseBoards);
   const unitTitle = `${listing.address}, ${unitLabel(listing.unit)}`;
+  const listed = canUseBoards && session
+    ? await listShowingsForActor(actorFromSession(session), { unitId: listing.id })
+    : null;
+  const showings = listed && "showings" in listed.body ? listed.body.showings : [];
 
   return (
     <UnitDetail
@@ -57,7 +62,17 @@ export default async function UnitPage({ params }: { params: Promise<{ id: strin
       section={sectionFor(listing, claimed.ids)}
       notice={
         <>
-          {canShare ? <ShareUnitPanel unitId={listing.id} unitTitle={unitTitle} /> : null}
+          {canUseBoards ? <ShareUnitPanel unitId={listing.id} unitTitle={unitTitle} /> : null}
+          {canUseBoards && session ? (
+            <ShowingLog
+              unitId={listing.id}
+              viewerLabel={session.name?.trim() || session.email}
+              showings={showings}
+              showBroker={session.role === "admin"}
+              currentUserId={session.userId}
+              canEditEveryRow={session.role === "admin"}
+            />
+          ) : null}
           {canClaim ? <ClaimUnitForm unitId={listing.id} unitTitle={unitTitle} variant="page" /> : null}
         </>
       }

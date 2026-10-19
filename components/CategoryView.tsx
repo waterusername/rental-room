@@ -1,6 +1,7 @@
 import { Browser } from "./Browser";
 import { boardClaims } from "@/lib/claim-unit";
 import { getCurrentSession } from "@/lib/auth/guards";
+import { showingStatsForUnits } from "@/lib/auth/showings-service";
 import { apartmentBoardGroups, categoryMeta, inventory, listingsFor } from "@/lib/inventory";
 import { exteriorFor } from "@/lib/street-view";
 import type { Category } from "@/lib/types";
@@ -8,10 +9,13 @@ import type { Category } from "@/lib/types";
 export async function CategoryView({ category, notice }: { category: Category; notice?: string }) {
   const meta = categoryMeta(category);
   const isHome = category === "apartment";
-  const session = isHome ? await getCurrentSession() : null;
-  const claimed = isHome ? await boardClaims() : null;
+  const [session, claimed] = await Promise.all([
+    getCurrentSession(),
+    isHome ? boardClaims() : Promise.resolve(null),
+  ]);
   const groups = isHome ? apartmentBoardGroups(claimed?.ids) : undefined;
   const listings = groups ? groups.flatMap((group) => group.listings) : listingsFor(category);
+  const showingStats = session?.role === "admin" ? await showingStatsForUnits(listings.map((listing) => listing.id)) : undefined;
   const withTour = listings.filter((listing) => listing.tours.length > 0).length;
   const availableCount = groups?.find((group) => group.id === "available")?.listings.length ?? 0;
   const comingCount = groups?.find((group) => group.id === "coming-up")?.listings.length ?? 0;
@@ -62,7 +66,8 @@ export async function CategoryView({ category, notice }: { category: Category; n
           }),
         )}
         variant={isHome ? "apartment" : "inventory"}
-        allowClaim={session?.role === "broker"}
+        allowClaim={isHome && session?.role === "broker"}
+        showingStats={showingStats}
       />
     </div>
   );

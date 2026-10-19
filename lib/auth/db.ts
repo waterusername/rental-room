@@ -34,6 +34,7 @@ import {
 } from "../claim-record.ts";
 import { GRINBERG_ADMIN_EMAILS } from "./staff.ts";
 import { BILLING_STATUSES, ROLES } from "./types.ts";
+import type { ShowingOutcome, ShowingRecord } from "../showings.ts";
 
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -138,6 +139,20 @@ const SCHEMA = [
     notify_detail TEXT NOT NULL DEFAULT ''
   )`,
   `CREATE INDEX IF NOT EXISTS idx_unit_claims_claimed_at ON unit_claims (claimed_at)`,
+  `CREATE TABLE IF NOT EXISTS showings (
+    id TEXT PRIMARY KEY,
+    unit_id TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    user_email TEXT NOT NULL,
+    shown_at TEXT NOT NULL,
+    prospect_first_name TEXT,
+    outcome TEXT CHECK (outcome IS NULL OR outcome IN ('interested', 'applying', 'not_interested')),
+    note TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_showings_unit ON showings (unit_id, shown_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_showings_user ON showings (user_id, shown_at)`,
 ];
 
 const ADDED_USER_COLUMNS: { name: string; definition: string }[] = [
@@ -1255,6 +1270,175 @@ export async function updateUnitClaimNotify(id: string, status: ClaimNotifyStatu
     sql: "UPDATE unit_claims SET notify_status = ?, notify_detail = ? WHERE id = ?",
     args: [status, detail.slice(0, 500), id],
   });
+}
+
+const SHOWING_COLUMNS = `s.id, s.unit_id, s.user_id, s.user_email, s.shown_at, s.prospect_first_name, s.outcome, s.note, s.created_at, u.name AS broker_name, u.email AS account_email`;
+
+type ShowingRow = {
+  id: string;
+  unit_id: string;
+  user_id: string;
+  user_email: string;
+  shown_at: string;
+  prospect_first_name: string | null;
+  outcome: string | null;
+  note: string | null;
+  created_at: string;
+  broker_name: string | null;
+  account_email: string | null;
+};
+
+function asShowingOutcome(value: string | null): ShowingOutcome | null {
+  if (value === "interested" || value === "applying" || value === "not_interested") return value;
+  return null;
+}
+
+function showingFromRow(row: ShowingRow): ShowingRecord {
+  const accountEmail = row.account_email?.trim();
+  return {
+    id: row.id,
+    unitId: row.unit_id,
+    userId: row.user_id,
+    userEmail: accountEmail || row.user_email,
+    brokerName: row.broker_name?.trim() || null,
+    shownAt: row.shown_at,
+    prospectFirstName: row.prospect_first_name?.trim() || null,
+    outcome: asShowingOutcome(row.outcome),
+    note: row.note ?? "",
+    createdAt: row.created_at,
+  };
+}
+
+export async function insertShowingRecord(input: {
+  unitId: string;
+  userId: string;
+  userEmail: string;
+  shownAt: string;
+  prospectFirstName: string | null;
+  outcome: ShowingOutcome | null;
+  note: string;
+}): Promise<ShowingRecord> {
+  await ensureSchema();
+  const now = new Date().toISOString();
+  const id = randomUUID();
+  await getClient().execute({
+    sql: `INSERT INTO showings (
+      id, unit_id, user_id, user_email, shown_at, prospect_first_name, outcome, note, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      id,
+      input.unitId,
+      input.userId,
+      input.userEmail,
+      input.shownAt,
+      input.prospectFirstName,
+      input.outcome,
+      input.note,
+      now,
+      now,
+    ],
+  });
+  const saved = await findShowingRecord(id);
+  if (!saved) throw new Error("Could not save the showing");
+  return saved;
+}
+
+export async function findShowingRecord(id: string): Promise<ShowingRecord | null> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: `SELECT ${SHOWING_COLUMNS}
+      FROM showings s
+      LEFT JOIN users u ON u.id = s.user_id
+      WHERE s.id = ?`,
+    args: [id],
+  });
+  const row = result.rows[0] as unknown as ShowingRow | undefined;
+  return row ? showingFromRow(row) : null;
+}
+
+export async function listShowingRecords(input: {
+  userId: string | null;
+  unitId: string | null;
+}): Promise<ShowingRecord[]> {
+  await ensureSchema();
+  const filters: string[] = [];
+  const args: string[] = [];
+  if (input.userId) {
+    filters.push("s.user_id = ?");
+    args.push(input.userId);
+  }
+  if (input.unitId) {
+    filters.push("s.unit_id = ?");
+    args.push(input.unitId);
+  }
+  const where = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
+  const result = await getClient().execute({
+    sql: `SELECT ${SHOWING_COLUMNS}
+      FROM showings s
+      LEFT JOIN users u ON u.id = s.user_id
+      ${where}
+      ORDER BY s.shown_at DESC, s.created_at DESC`,
+    args,
+  });
+  return result.rows.map((row) => showingFromRow(row as unknown as ShowingRow));
+}
+
+export async function updateShowingRecord(input: {
+  id: string;
+  actorUserId: string;
+  actorIsAdmin: boolean;
+  shownAt: string;
+  prospectFirstName: string | null;
+  outcome: ShowingOutcome | null;
+  note: string;
+}): Promise<ShowingRecord | null> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: `UPDATE showings
+      SET shown_at = ?, prospect_first_name = ?, outcome = ?, note = ?, updated_at = ?
+      WHERE id = ? AND (? = 1 OR user_id = ?)`,
+    args: [
+      input.shownAt,
+      input.prospectFirstName,
+      input.outcome,
+      input.note,
+      new Date().toISOString(),
+      input.id,
+      input.actorIsAdmin ? 1 : 0,
+      input.actorUserId,
+    ],
+  });
+  if (Number(result.rowsAffected ?? 0) < 1) return null;
+  return findShowingRecord(input.id);
+}
+
+export async function deleteShowingRecord(input: {
+  id: string;
+  actorUserId: string;
+  actorIsAdmin: boolean;
+}): Promise<boolean> {
+  await ensureSchema();
+  const result = await getClient().execute({
+    sql: "DELETE FROM showings WHERE id = ? AND (? = 1 OR user_id = ?)",
+    args: [input.id, input.actorIsAdmin ? 1 : 0, input.actorUserId],
+  });
+  return Number(result.rowsAffected ?? 0) > 0;
+}
+
+export async function showingCountsByUnit(): Promise<Map<string, { count: number; lastShownAt: string }>> {
+  await ensureSchema();
+  const result = await getClient().execute(
+    `SELECT unit_id, COUNT(*) AS n, MAX(shown_at) AS last_shown_at
+     FROM showings
+     GROUP BY unit_id`,
+  );
+  const counts = new Map<string, { count: number; lastShownAt: string }>();
+  for (const row of result.rows) {
+    const lastShownAt = row.last_shown_at ? String(row.last_shown_at) : "";
+    if (!lastShownAt) continue;
+    counts.set(String(row.unit_id), { count: Number(row.n ?? 0), lastShownAt });
+  }
+  return counts;
 }
 
 export async function recordShareView(id: string, now = Date.now()): Promise<void> {

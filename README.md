@@ -87,6 +87,15 @@ A signed-in broker who can open the boards can mark an Available or Coming Up ap
 
 The office email is sent only when `RESEND_API_KEY` and `MAIL_FROM` are both set. The message goes to `OFFICE_NOTIFY_EMAILS` when that list is set, otherwise to every address in the Grinberg office list (`GRINBERG_ADMIN_EMAILS` in `lib/auth/config.ts`). `daniel@grinbergmanagement.com` is always included. There is no SMTP password in this app. Until the Resend variables are set, the claim is still saved and the unit stays off the site, and the office email is not sent.
 
+### Broker showings
+
+A signed-in broker or administrator who can open the boards can log a showing from the unit page.
+
+1. Open the unit and choose **Log a showing**. Date and time default to now. Prospect first name, outcome (Interested, Applying, or Not interested), and a short note are optional.
+2. The broker is the signed-in account. The form has no broker field, and the API rejects a request that includes a broker, phone, email, or last name.
+3. The row is stored in `showings` on the existing Turso database (`id`, `unit_id`, `user_id`, `user_email`, `shown_at`, `prospect_first_name`, `outcome`, `note`, `created_at`, `updated_at`). The table is created the first time the app connects, the same way as `unit_claims`. It is not written into `data/rental-listings.json`.
+4. Brokers see, edit, and delete only their own rows. Administrators see every row on **Showings** (`/admin/showings`), can filter by broker and unit, and see a per-broker count for this week and this month in America/New_York. Administrators also see a shown count and last shown time on each board card. A card with no showings says **Not shown yet**.
+
 ### Share-risk flags
 
 The broker list shows **Possible shared login** when any of these are true. The same text is on the access desk.

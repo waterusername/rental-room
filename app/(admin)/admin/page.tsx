@@ -21,6 +21,12 @@ export default async function AdminHomePage() {
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
+            href="/admin/showings"
+            className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline hover:border-accent-border"
+          >
+            Showings
+          </Link>
+          <Link
             href="/admin/completed"
             className="inline-flex min-h-11 items-center rounded-full border border-line bg-panel px-4 text-sm font-semibold text-ink no-underline hover:border-accent-border"
           >

@@ -13,6 +13,7 @@ import {
   statusTone,
   unitLabel,
 } from "@/lib/format";
+import { formatShownAt, type UnitShowingStat } from "@/lib/showings";
 import type { ExteriorPhoto } from "@/lib/street-view";
 import type { Listing } from "@/lib/types";
 
@@ -22,12 +23,14 @@ export function ListingCard({
   section,
   claim = null,
   allowClaim = false,
+  showingStat,
 }: {
   listing: Listing;
   photo: ExteriorPhoto | null;
   section?: BoardSectionId;
   claim?: ClaimSummary | null;
   allowClaim?: boolean;
+  showingStat?: UnitShowingStat;
 }) {
   const name = `${listing.address}, ${unitLabel(listing.unit)}`;
   const facts = unitFacts(listing);
@@ -93,6 +96,7 @@ export function ListingCard({
             </p>
           ) : null}
           <p className="mt-3 text-sm font-semibold">{rentSummary(listing)}</p>
+          {showingStat ? <ShowingStat stat={showingStat} /> : null}
           <ul className="mt-3 flex flex-wrap gap-1.5">
             {listing.tours.length > 0 ? <li><Chip tone="ok">Has tour</Chip></li> : null}
             {listing.nycha === "YES" ? <li><Chip>NYCHA</Chip></li> : null}
@@ -116,6 +120,27 @@ export function ListingCard({
       </Link>
       {showClaim ? <ClaimUnitForm unitId={listing.id} unitTitle={name} variant="card" /> : null}
     </li>
+  );
+}
+
+function ShowingStat({ stat }: { stat: UnitShowingStat }) {
+  if (stat.count === 0) {
+    return (
+      <p className="mt-3">
+        <span className="inline-flex items-center rounded-full border border-warn-border bg-warn-soft px-2.5 py-0.5 text-xs font-semibold text-warn">
+          Not shown yet
+        </span>
+      </p>
+    );
+  }
+  const times = stat.count === 1 ? "1 time" : `${stat.count} times`;
+  return (
+    <p className="mt-3 text-sm font-semibold">
+      Shown {times}
+      {stat.lastShownAt ? (
+        <span className="font-normal text-muted"> · Last {formatShownAt(stat.lastShownAt)}</span>
+      ) : null}
+    </p>
   );
 }
 

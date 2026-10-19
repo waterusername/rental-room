@@ -27,6 +27,9 @@ export function AccessHeader({
               <Link href="/admin" className="text-ink no-underline">
                 Brokers
               </Link>
+              <Link href="/admin/showings" className="text-ink no-underline">
+                Showings
+              </Link>
               <Link href="/admin/completed" className="text-ink no-underline">
                 Completed
               </Link>

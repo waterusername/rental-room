@@ -16,6 +16,7 @@ import {
 } from "@/lib/format";
 import type { BoardGroup } from "@/lib/board";
 import type { ClaimSummary } from "@/lib/claim-record";
+import type { UnitShowingStat } from "@/lib/showings";
 import { EMPTY_FILTERS, type Filters, type Listing } from "@/lib/types";
 
 const UNIT_ORDER: UnitGroup[] = ["0", "1", "2", "3", "4", "5", "garage", "storage", "retail", "other"];
@@ -28,6 +29,7 @@ export function Browser({
   showHeadings = true,
   claims,
   allowClaim = false,
+  showingStats,
 }: {
   listings: Listing[];
   groups?: BoardGroup[];
@@ -36,6 +38,7 @@ export function Browser({
   showHeadings?: boolean;
   claims?: Record<string, ClaimSummary>;
   allowClaim?: boolean;
+  showingStats?: Record<string, UnitShowingStat>;
 }) {
   const boardGroups = useMemo(() => groups ?? [], [groups]);
   const grouped = boardGroups.length > 0;
@@ -109,6 +112,7 @@ export function Browser({
                       section={group.id}
                       claim={claims?.[listing.id] ?? null}
                       allowClaim={allowClaim}
+                      showingStat={showingStats?.[listing.id]}
                     />
                   ))}
                 </ul>
@@ -125,7 +129,12 @@ export function Browser({
           className={`mt-4 grid gap-4 sm:gap-5 ${variant === "apartment" ? "md:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-3"}`}
         >
           {shown.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} photo={photos[listing.id] ?? null} />
+            <ListingCard
+              key={listing.id}
+              listing={listing}
+              photo={photos[listing.id] ?? null}
+              showingStat={showingStats?.[listing.id]}
+            />
           ))}
         </ul>
       )}
