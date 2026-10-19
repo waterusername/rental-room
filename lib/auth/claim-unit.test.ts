@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, test } from "node:test";
-import { apartmentBoardGroups, isReservedListing } from "../inventory.ts";
+import { apartmentBoardGroups, findListing, isReservedListing } from "../inventory.ts";
 
 const dir = mkdtempSync(join(tmpdir(), "rr-claim-"));
 process.env.TURSO_DATABASE_URL = `file:${join(dir, "auth.db")}`;
@@ -59,16 +59,11 @@ test("a broker claim reserves the unit, records who claimed it, and emails the o
   assert.match(calls[0] ?? "", /Client is signing tonight/);
   assert.equal((calls[0] ?? "").includes("re_test_secret"), false);
 
-  const brokerBoard = apartmentBoardGroups(false, [result.claim.unitId]);
-  const adminBoard = apartmentBoardGroups(true, [result.claim.unitId]);
-  const brokerIds = brokerBoard.flatMap((group) => group.listings.map((item) => item.id));
-  assert.equal(brokerIds.includes(result.claim.unitId), false);
-  assert.equal(brokerBoard.some((group) => group.id === "reserved"), false);
-  assert.equal(
-    adminBoard.find((group) => group.id === "reserved")?.listings.some((item) => item.id === result.claim.unitId),
-    true,
-  );
-  const listing = adminBoard.flatMap((group) => group.listings).find((item) => item.id === result.claim.unitId);
+  const board = apartmentBoardGroups([result.claim.unitId]);
+  const shownIds = board.flatMap((group) => group.listings.map((item) => item.id));
+  assert.equal(shownIds.includes(result.claim.unitId), false);
+  assert.equal(board.some((group) => group.id === "reserved"), false);
+  const listing = findListing(result.claim.unitId);
   assert.ok(listing);
   assert.equal(isReservedListing(listing, [result.claim.unitId]), true);
 
@@ -91,7 +86,7 @@ test("coming up can be claimed, sheet reserved and admins cannot, and a missing 
     called = true;
     return new Response("{}", { status: 200 });
   };
-  const coming = apartmentBoardGroups(false).find((group) => group.id === "coming-up")?.listings[0];
+  const coming = apartmentBoardGroups().find((group) => group.id === "coming-up")?.listings[0];
   assert.ok(coming);
 
   const saved = await claimUnitForBroker({
@@ -119,7 +114,7 @@ test("coming up can be claimed, sheet reserved and admins cannot, and a missing 
     env: {},
     fetchImpl,
   });
-  assert.deepEqual(sheet, { ok: false, error: "That unit is already reserved." });
+  assert.deepEqual(sheet, { ok: false, error: "That unit is not on the board." });
 
   const admin = await claimUnitForBroker({
     ...broker,

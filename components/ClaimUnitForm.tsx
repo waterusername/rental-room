@@ -21,7 +21,7 @@ export function ClaimUnitForm({
   function confirmClaim(event: FormEvent<HTMLFormElement>) {
     if (
       !window.confirm(
-        `Mark ${unitTitle} Reserved? It leaves your board, and you will not be able to open or share it.`,
+        `Mark ${unitTitle} Reserved? It leaves the site, and you will not be able to open or share it.`,
       )
     ) {
       event.preventDefault();
@@ -52,7 +52,7 @@ export function ClaimUnitForm({
     <aside className="mt-6 rounded-lg border border-tan-border bg-tan-soft px-4 py-4" aria-label="Mark reserved">
       <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-tan">Mark reserved</h2>
       <p className="mt-2 text-sm leading-6 text-ink">
-        You are working this unit. Marking it Reserved tells the office and removes it from the broker boards. You
+        You are working this unit. Marking it Reserved tells the office and removes it from the site. You
         will not be able to open or share it after that.
       </p>
       <form action={action} onSubmit={confirmClaim} className="mt-4">

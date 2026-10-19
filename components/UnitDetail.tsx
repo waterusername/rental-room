@@ -37,7 +37,7 @@ export function UnitDetail({
 }) {
   const { meta, note, title, photo, tours, floorPlans } = presentListing(listing);
   const section = sectionProp ?? sectionFor(listing);
-  const crumb = section === "reserved" ? { href: "/reserved", label: "Reserved" } : { href: meta.href, label: meta.label };
+  const crumb = { href: meta.href, label: meta.label };
   const beds = bedCount(listing);
   const baths = bathCount(listing);
   const washer = yesNo(listing.washerDryer, "Yes", "No");

@@ -2,7 +2,7 @@
 
 A vacancy board for Grinberg apartments. It follows the browse-and-detail feel of a portfolio deal room, for rental units rather than development assemblages.
 
-Listings, tours, rents, and office notes come from `data/rental-listings.json`. The site does not call Google Sheets. Apartment `status` in that file selects the board section: Available, Coming Up (turnover), or Reserved (administrators only).
+Listings, tours, rents, and office notes come from `data/rental-listings.json`. The site does not call Google Sheets. Apartment `status` in that file selects the board section: Available or Coming Up (turnover). Reserve, Reserved, and Turnover-reserved units, and every row in `listings.reserved`, stay in the file and are not shown to brokers or administrators.
 
 The boards are private. A visitor who is not signed in sees a login page and no listings. Brokers sign in with email and password. Administrators manage those accounts, review sign-in history, and can require a Stripe subscription.
 
@@ -82,11 +82,10 @@ The `unit_shares` table is created in the existing Turso database the first time
 A signed-in broker who can open the boards can mark an Available or Coming Up apartment Reserved when they are working that deal.
 
 1. On the apartment board, choose **Mark reserved** on the card, or open the unit and choose **Mark reserved**. An optional note (up to 280 characters) can go with the unit-page form. The broker’s name and email come from the session.
-2. The unit leaves the broker board. Brokers cannot open it or create a share link, and an existing share link stops opening it. The Reserved tab stays administrator-only.
-3. Administrators see the unit under Reserved, on the apartment board and at `/reserved`, with who claimed it, when, the note, and whether the office email was sent.
-4. The claim is a row in `unit_claims` (created on the existing Turso database the first time the app connects). It is not written into `data/rental-listings.json`. Replacing that file does not clear claims. A claim for a unit id that is no longer in the file stays in the database and drops off the board.
+2. The unit leaves the site for brokers and administrators. Nobody can open it or create a share link, and an existing share link stops opening it. There is no Reserved section, Reserved count, or Reserved nav item.
+3. The claim is a row in `unit_claims` (created on the existing Turso database the first time the app connects). It is not written into `data/rental-listings.json`. Replacing that file does not clear claims. A claim for a unit id that is no longer in the file stays in the database and the unit stays off the site.
 
-The office email is sent only when `RESEND_API_KEY` and `MAIL_FROM` are both set. The message goes to `OFFICE_NOTIFY_EMAILS` when that list is set, otherwise to every address in the Grinberg office list (`GRINBERG_ADMIN_EMAILS` in `lib/auth/config.ts`). `daniel@grinbergmanagement.com` is always included. There is no SMTP password in this app. Until the Resend variables are set, the claim is still saved and the Reserved card says **Office email not configured**.
+The office email is sent only when `RESEND_API_KEY` and `MAIL_FROM` are both set. The message goes to `OFFICE_NOTIFY_EMAILS` when that list is set, otherwise to every address in the Grinberg office list (`GRINBERG_ADMIN_EMAILS` in `lib/auth/config.ts`). `daniel@grinbergmanagement.com` is always included. There is no SMTP password in this app. Until the Resend variables are set, the claim is still saved and the unit stays off the site, and the office email is not sent.
 
 ### Share-risk flags
 
@@ -138,14 +137,15 @@ Use Stripe test keys until a real charge should go through. These variables stil
 2. Keep the same top-level shape: `source`, `contact`, and `listings`.
 3. Apartment `status` selects the section. Matching is case-insensitive and treats `Turn Over` and `Turnover` as the same word.
    - `Available` → **Available**, shown to brokers and administrators.
-   - `Turnover In Progress`, `Turn Over In Progress`, or other turnover wording → **Coming Up**. The board does not use the raw sheet phrase as the section title. Brokers and administrators both see it.
-   - `Reserve`, `Reserved`, or `RESERVED` → **Reserved**. Brokers do not see these units on the apartment board, cannot open the unit page, and cannot create a share link. An existing share link stops opening the unit. Administrators see them in the Reserved section on the apartment board and at `/reserved`.
-   - A broker can also mark an Available or Coming Up unit Reserved from the unit page or the card. That claim is stored in Turso (`unit_claims`), not written back into this JSON file. It uses the same reserved id set as a `listings.reserved` row: brokers lose the board, the unit page, and share links, and administrators still see it under Reserved, with the broker’s name, email, time, and note.
+   - `Turnover In Progress`, `Turn Over In Progress`, or other turnover wording that does not also say reserved → **Coming Up**. The board does not use the raw sheet phrase as the section title. Brokers and administrators both see it.
+   - `Reserve`, `Reserved`, `RESERVED`, `Reservation`, or `Turnover-reserved` (any wording with reserve, reserved, or reservation) → not shown. Brokers and administrators do not see these units on the board, in counts, in nav, or on a unit page, and cannot create a share link. An existing share link stops opening the unit. There is no Reserved section.
+   - `Application In Process` stays in **Available** with that badge, even when the same text also matches reserved or the unit is listed in `listings.reserved`.
+   - A broker can also mark an Available or Coming Up unit Reserved from the unit page or the card. That claim is stored in Turso (`unit_claims`), not written back into this JSON file. The unit leaves the site for every role.
    - Any other status (for example credit check, under initial development, or a blank status) stays in **Available**. The card keeps that sheet wording.
-4. A row in `listings.reserved` is Reserved even if its status text is different. The same unit may also remain in `listings.apartments`; it is still listed only under Reserved. `listings.commercial`, `listings.garages`, `listings.storages`, `listings.pipeline`, and `listings.residentialTracker` stay in the file so the shape is stable. Those tabs are not pages.
+4. A row in `listings.reserved` is not rendered, even if its status text is different or the same unit also remains in `listings.apartments`. Application In Process is the exception and stays visible. `listings.commercial`, `listings.garages`, `listings.storages`, `listings.pipeline`, and `listings.residentialTracker` stay in the file so the shape is stable. Those tabs are not pages.
 5. Restart the dev server, or redeploy. The file is imported at build time.
 
-Rows from other tabs are not added as cards. The current snapshot has 35 apartments, plus any Reserved rows in `listings.reserved`.
+Rows from other tabs are not added as cards. The current snapshot has 35 apartments. Reserved rows stay in `listings.reserved` and are not shown.
 
 `contact.applyEmail` is the apply mailto on each unit. The office phone is a call link. Dimitry’s number is plain text in the footer, not a call button.
 
@@ -157,9 +157,10 @@ The source is the "Available Apartments" tab of the office Google Sheet (Availab
 
 1. Export that tab as CSV (Sheets connector or File > Download > CSV).
 2. `node scripts/sync-from-sheet.mjs path/to.csv --dry-run` to preview, then without `--dry-run` to write.
-   Units not on the sheet are removed from `listings.apartments`; new rows are added; existing rows keep id, layout, sqft, and tour labels. `listings.reserved` and Turso claims / completed rentals are untouched.
-   The script does not edit `listings.reserved`. When a removed unit now sits on the sheet's "Reserved Apartments" tab, move its row into `listings.reserved` by hand (status `RESERVED`, reservation date from that tab) so administrators still see it under Reserved.
-   A unit whose status on the Available tab says "Application In Process" (for example "Application In Process (not yet approved)") is written as status `Application In Process`. It stays broker-visible in the Available section with a tan "Application In Process" badge (same chip style as Coming Up), even if the unit is also listed on the "Reserved Apartments" tab. Do not mark it `RESERVED` and do not copy it into `listings.reserved`; the script prints a warning if it is already there. Once the application is approved and the sheet says Reserved, the normal Reserved rules apply.
+   Units not on the sheet are removed from `listings.apartments`; new rows are added; existing rows keep id, layout, sqft, and tour labels. `listings.reserved` and Turso claims / completed rentals are untouched, and `listings.reserved` is not rendered.
+   Do not copy the sheet's "Reserved Apartments" tab into `listings.apartments` or `listings.reserved`. A unit that leaves the Available tab for that Reserved tab is removed from `listings.apartments` and does not come back onto the site.
+   Rows on the Available tab whose status says Reserve, Reserved, Reservation, or Turnover-reserved are omitted from `listings.apartments` and are not shown. The script prints them as `OMITTED RESERVED, not shown`.
+   A unit whose status on the Available tab says "Application In Process" (for example "Application In Process (not yet approved)") is written as status `Application In Process`. It stays in the Available section with a tan "Application In Process" badge (same chip style as Coming Up), even if the unit is also listed on the "Reserved Apartments" tab or already in `listings.reserved`. Do not mark it `RESERVED`. Once the application is approved and the sheet says Reserved, the sync omits it and the site stops showing it.
 3. If addresses were added, `npm run streetview`.
 4. Test, build, PR to `main`, deploy to production.
 

@@ -15,14 +15,18 @@
  * - Only the APARTMENTS block (rows before the "GARAGES" header) is read.
  * - Units on the site but not on the sheet are removed from listings.apartments.
  * - listings.reserved and Turso data (claims, completed rentals) are never touched.
+ *   The site does not render listings.reserved. Do not copy the Reserved Apartments
+ *   tab into listings.apartments or listings.reserved.
  * - Existing units keep their id, address spelling, bedrooms/baths/notes/prospect.
  *   Sheet fields (type, rents, zip, status, flags, tour, office notes) are refreshed.
  * - Tour URL comes from the second "Virtual Tour Links" column (column N).
  * - A sheet status containing "Application" (e.g. "Application In Process (not yet
  *   approved)") is written as "Application In Process". The site keeps it in the
- *   broker-visible Available section with an "Application In Process" badge, even
- *   if the unit also appears on the sheet's "Reserved Apartments" tab. Do not move
- *   such a unit into listings.reserved; the script warns if one is already there.
+ *   Available section with an "Application In Process" badge, even if the unit is
+ *   also on the Reserved Apartments tab or already in listings.reserved.
+ * - Reserve, Reserved, Reservation, and Turnover-reserved (any wording with
+ *   reserve/reserved/reservation, unless it also says application) are omitted.
+ *   Those rows are not written into listings.apartments and are not shown.
  * - Sqft/layout mappings live in data/layout-sqft.json and data/floor-plans.json
  *   keyed by Matterport id, and are not edited here.
  */
@@ -65,7 +69,21 @@ function parseCsv(text) {
 }
 
 const APPLICATION_IN_PROCESS = "Application In Process";
-const normalizeStatus = (v) => (v && /\bapplication\b/i.test(v) ? APPLICATION_IN_PROCESS : v);
+const isApplication = (v) => Boolean(v && /\bapplication\b/i.test(v));
+const normalizeStatus = (v) => (isApplication(v) ? APPLICATION_IN_PROCESS : v);
+/** Same reserved rule as lib/board.ts. Application In Process is not reserved. */
+function isReservedSheetStatus(v) {
+  if (!v || isApplication(v)) return false;
+  const value = v
+    .trim()
+    .toLowerCase()
+    .replace(/[_/]+/g, " ")
+    .replace(/-/g, " ")
+    .replace(/[.,;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return /\breserv(?:e|ed|ation)\b/.test(value);
+}
 const clean = (v) => { const s = (v ?? "").replace(/\s+/g, " ").trim(); return s === "" ? null : s; };
 const money = (v) => { const s = clean(v); if (!s) return null; const n = Number(s.replace(/[$,]/g, "")); return Number.isFinite(n) ? n : null; };
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -78,17 +96,23 @@ const rows = parseCsv(readFileSync(csvPath, "utf8"));
 const headerIdx = rows.findIndex((r) => clean(r[1]) === "Property" && clean(r[2]) === "Unit");
 if (headerIdx < 0) throw new Error("Could not find the Property/Unit header row");
 const sheet = [];
+const omittedReserved = [];
 for (const r of rows.slice(headerIdx + 1)) {
   const first = clean(r[1]);
   if (first && /^(GARAGES|COMMERCIAL|STORAGE)/i.test(first)) break;
   if (!first || !clean(r[2])) continue;
   let unit = clean(r[2]);
   for (const [re, rep] of UNIT_FIXES) unit = unit.replace(re, rep);
+  const status = normalizeStatus(clean(r[7]));
+  if (isReservedSheetStatus(status)) {
+    omittedReserved.push(`${first} ${unit} (${status})`);
+    continue;
+  }
   const tour = clean(r[13])?.split(" ")[0] ?? null;
   sheet.push({
     address: first, unit,
     unitType: clean(r[3]), minRent: money(r[4]), targetRent: money(r[5]), zip: clean(r[6]),
-    status: normalizeStatus(clean(r[7])), nycha: clean(r[8]), hpdTrustFund: clean(r[9]),
+    status, nycha: clean(r[8]), hpdTrustFund: clean(r[9]),
     utilitiesIncluded: clean(r[10]), washerDryer: clean(r[11]), tourReady: clean(r[12]),
     tourUrl: tour && /^https?:/.test(tour) ? tour : null, officeNotes: clean(r[14]),
   });
@@ -136,14 +160,15 @@ const applicationConflicts = next
   .map((l) => `${l.address} ${l.unit} (${l.id})`);
 
 console.log(`Sheet apartments: ${sheet.length}`);
+console.log(`OMITTED RESERVED, not shown (${omittedReserved.length}):`); omittedReserved.forEach((x) => console.log("  - " + x));
 console.log(`REMOVED (${removed.length}):`); removed.forEach((x) => console.log("  - " + x));
 console.log(`ADDED (${added.length}):`); added.forEach((x) => console.log("  + " + x));
 console.log(`UPDATED (${updated.length}):`); updated.forEach((x) => console.log("  ~ " + x));
 const applications = next.filter((l) => l.status === APPLICATION_IN_PROCESS).map((l) => `${l.address} ${l.unit}`);
 console.log(`APPLICATION IN PROCESS, broker-visible (${applications.length}):`); applications.forEach((x) => console.log("  * " + x));
 if (applicationConflicts.length) {
-  console.log(`WARNING: Application In Process units also in listings.reserved (they would stay hidden). Remove them from listings.reserved:`);
-  applicationConflicts.forEach((x) => console.log("  ! " + x));
+  console.log(`NOTE: Application In Process units are also in listings.reserved. The site still shows them; listings.reserved is not rendered:`);
+  applicationConflicts.forEach((x) => console.log("  * " + x));
 }
 
 if (!dryRun) {

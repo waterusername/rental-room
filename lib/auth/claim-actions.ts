@@ -19,7 +19,6 @@ export async function claimUnitAction(_prev: ActionState, formData: FormData): P
   if (!result.ok) return { error: result.error };
 
   revalidatePath("/");
-  revalidatePath("/reserved");
   revalidatePath(`/units/${result.claim.unitId}`);
   redirect("/?claimed=1");
 }

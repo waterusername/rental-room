@@ -68,11 +68,12 @@ export function listingReservedIds(extraReservedIds?: Iterable<string>): Readonl
   return reservedIdSet(extraReservedIds);
 }
 
+/** Units the site can open. Reserved sheet rows and `listings.reserved` are omitted. */
 export function routableListings(): Listing[] {
   const seen = new Set<string>();
   const rows: Listing[] = [];
-  for (const listing of [...allListings(), ...inventory.listings.reserved]) {
-    if (seen.has(listing.id)) continue;
+  for (const listing of allListings()) {
+    if (seen.has(listing.id) || isReservedListing(listing)) continue;
     seen.add(listing.id);
     rows.push(listing);
   }
@@ -92,12 +93,11 @@ export function sectionFor(listing: Listing, extraReservedIds?: Iterable<string>
 }
 
 /**
- * Broker groups omit Reserved. Administrators can include that section.
- * `extraReservedIds` are broker claims. They use the same reserved bucket as sheet rows.
+ * Available and Coming Up for every role. Reserved sheet rows, `listings.reserved`,
+ * and broker-claim ids are left out.
  */
-export function apartmentBoardGroups(includeReserved: boolean, extraReservedIds?: Iterable<string>): BoardGroup[] {
+export function apartmentBoardGroups(extraReservedIds?: Iterable<string>): BoardGroup[] {
   return groupBoardListings(inventory.listings.apartments, inventory.listings.reserved, {
-    includeReserved,
     extraReservedIds,
   });
 }

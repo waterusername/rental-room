@@ -9,17 +9,12 @@ export async function CategoryView({ category, notice }: { category: Category; n
   const meta = categoryMeta(category);
   const isHome = category === "apartment";
   const session = isHome ? await getCurrentSession() : null;
-  const includeReserved = session?.role === "admin";
   const claimed = isHome ? await boardClaims() : null;
-  const groups = isHome ? apartmentBoardGroups(includeReserved, claimed?.ids) : undefined;
+  const groups = isHome ? apartmentBoardGroups(claimed?.ids) : undefined;
   const listings = groups ? groups.flatMap((group) => group.listings) : listingsFor(category);
   const withTour = listings.filter((listing) => listing.tours.length > 0).length;
   const availableCount = groups?.find((group) => group.id === "available")?.listings.length ?? 0;
   const comingCount = groups?.find((group) => group.id === "coming-up")?.listings.length ?? 0;
-  const reservedCount = groups?.find((group) => group.id === "reserved")?.listings.length ?? 0;
-  const lede = isHome && includeReserved
-    ? "Available units, Coming Up for units still turning over, and Reserved. Reserved includes the office sheet and units a broker claimed. Only administrators see Reserved. Filter by bedrooms and bathrooms. Each card shows a street-level photo of the building, plus rents, program flags, and a Matterport tour when a link is on file."
-    : meta.lede;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
@@ -29,19 +24,18 @@ export async function CategoryView({ category, notice }: { category: Category; n
       <h1 className="mt-2 max-w-3xl font-serif text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
         {isHome ? "Find the unit. See the space." : meta.title}
       </h1>
-      <p className="mt-4 max-w-2xl text-base leading-7 text-muted">{lede}</p>
+      <p className="mt-4 max-w-2xl text-base leading-7 text-muted">{meta.lede}</p>
       {notice ? (
         <p role="status" className="mt-4 max-w-2xl rounded-md border border-accent-border bg-accent-soft px-3 py-2 text-sm text-accent">
           {notice}
         </p>
       ) : null}
-      <dl className={`mt-6 grid grid-cols-2 gap-3 ${includeReserved ? "sm:grid-cols-4" : "sm:grid-cols-3"}`}>
+      <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
         {isHome ? (
           <>
             <Stat label="Available" value={String(availableCount)} />
             <Stat label="Coming Up" value={String(comingCount)} />
             <Stat label="With a tour" value={String(withTour)} />
-            {includeReserved ? <Stat label="Reserved" value={String(reservedCount)} /> : null}
           </>
         ) : (
           <>
@@ -68,7 +62,6 @@ export async function CategoryView({ category, notice }: { category: Category; n
           }),
         )}
         variant={isHome ? "apartment" : "inventory"}
-        claims={includeReserved && claimed ? claimed.byUnit : undefined}
         allowClaim={session?.role === "broker"}
       />
     </div>

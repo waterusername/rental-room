@@ -9,6 +9,7 @@ import {
   statusBoardSection,
 } from "./board.ts";
 import { bedCount, statusTone } from "./format.ts";
+import { findListing, routableListings } from "./inventory.ts";
 import type { Listing } from "./types.ts";
 
 function listing(partial: Pick<Listing, "id" | "status"> & Partial<Listing>): Listing {
@@ -65,86 +66,89 @@ test("sheet statuses map onto Available, Coming Up, and Reserved", () => {
   assert.equal(displayedStatus(""), "Status not listed");
 });
 
-test("reserved rows stay out of the broker board even when status says Available", () => {
+test("reserved rows are omitted for every viewer, including turnover-reserved", () => {
   const apartments = [
     listing({ id: "open", status: "Available" }),
     listing({ id: "soon", status: "Turn Over In Progress" }),
     listing({ id: "held", status: "Available" }),
+    listing({ id: "turnover-held", status: "Turnover-reserved" }),
+    listing({ id: "pending", status: "Application In Process" }),
   ];
-  const reserved = [listing({ id: "held", status: "Available" }), listing({ id: "sheet", status: "RESERVED" })];
-  const broker = groupBoardListings(apartments, reserved, { includeReserved: false });
-  const admin = groupBoardListings(apartments, reserved, { includeReserved: true });
-  const brokerIds = broker.flatMap((group) => group.listings.map((item) => item.id));
+  const reserved = [
+    listing({ id: "held", status: "Available" }),
+    listing({ id: "sheet", status: "RESERVED" }),
+    listing({ id: "pending", status: "RESERVED" }),
+  ];
+  for (const status of ["Turnover-reserved", "Turnover Reserved", "RESERVED / Turnover"]) {
+    assert.equal(statusBoardSection(status), "reserved", status);
+    assert.equal(displayedStatus(status), "Reserved", status);
+  }
+  const board = groupBoardListings(apartments, reserved);
+  const ids = board.flatMap((group) => group.listings.map((item) => item.id));
 
-  assert.deepEqual(broker.map((group) => group.id), ["available", "coming-up"]);
-  assert.deepEqual(brokerIds, ["open", "soon"]);
-  assert.equal(broker.some((group) => group.id === "reserved"), false);
-  assert.deepEqual(
-    admin.find((group) => group.id === "reserved")?.listings.map((item) => item.id),
-    ["held", "sheet"],
-  );
-  assert.equal(admin.find((group) => group.id === "available")?.listings.map((item) => item.id).includes("held"), false);
+  assert.deepEqual(board.map((group) => group.id), ["available", "coming-up"]);
+  assert.deepEqual(ids, ["open", "pending", "soon"]);
+  assert.equal(board.some((group) => group.id === "reserved"), false);
 
   const reservedIds = new Set(reserved.map((item) => item.id));
-  assert.equal(isReservedListing(apartments[2], reservedIds), true);
-  assert.equal(isReservedListing(apartments[0], reservedIds), false);
+  assert.equal(isReservedListing(apartments[2]!, reservedIds), true);
+  assert.equal(isReservedListing(apartments[3]!, reservedIds), true);
+  assert.equal(isReservedListing(apartments[0]!, reservedIds), false);
+  assert.equal(isReservedListing(apartments[4]!, reservedIds), false);
 });
 
-test("broker claims join the reserved set and leave the broker board", () => {
+test("broker claims leave the site for every viewer", () => {
   const apartments = [
     listing({ id: "open", status: "Available" }),
     listing({ id: "soon", status: "Turn Over In Progress" }),
     listing({ id: "claimed", status: "Available" }),
   ];
   const claimed = new Set(["claimed"]);
-  const broker = groupBoardListings(apartments, [], { includeReserved: false, extraReservedIds: claimed });
-  const admin = groupBoardListings(apartments, [], { includeReserved: true, extraReservedIds: claimed });
-  const brokerIds = broker.flatMap((group) => group.listings.map((item) => item.id));
+  const board = groupBoardListings(apartments, [], { extraReservedIds: claimed });
+  const ids = board.flatMap((group) => group.listings.map((item) => item.id));
 
-  assert.deepEqual(brokerIds, ["open", "soon"]);
-  assert.equal(broker.some((group) => group.id === "reserved"), false);
-  assert.deepEqual(
-    admin.find((group) => group.id === "reserved")?.listings.map((item) => item.id),
-    ["claimed"],
-  );
-  assert.equal(isReservedListing(apartments[2], claimed), true);
-  assert.equal(displayedStatus(apartments[2].status, "reserved"), "Reserved");
+  assert.deepEqual(ids, ["open", "soon"]);
+  assert.equal(board.some((group) => group.id === "reserved"), false);
+  assert.equal(isReservedListing(apartments[2]!, claimed), true);
+  assert.equal(displayedStatus(apartments[2]!.status, "reserved"), "Reserved");
 });
 
-test("the published snapshot hides reserved units from brokers and labels turnover as Coming Up", () => {
+test("the published snapshot hides reserved units and labels turnover as Coming Up", () => {
   const raw = JSON.parse(
     fs.readFileSync(new URL("../data/rental-listings.json", import.meta.url), "utf8"),
   ) as {
     listings: { apartments: Listing[]; reserved: Listing[] };
   };
-  const broker = groupBoardListings(raw.listings.apartments, raw.listings.reserved, { includeReserved: false });
-  const admin = groupBoardListings(raw.listings.apartments, raw.listings.reserved, { includeReserved: true });
-  const brokerIds = new Set(broker.flatMap((group) => group.listings.map((item) => item.id)));
-  const reserved = admin.find((group) => group.id === "reserved");
-  const available = broker.find((group) => group.id === "available");
-  const comingUp = broker.find((group) => group.id === "coming-up");
+  const board = groupBoardListings(raw.listings.apartments, raw.listings.reserved);
+  const shownIds = new Set(board.flatMap((group) => group.listings.map((item) => item.id)));
+  const available = board.find((group) => group.id === "available");
+  const comingUp = board.find((group) => group.id === "coming-up");
 
-  assert.ok(reserved);
-  assert.equal(brokerIds.has("apt-240-benziger-ave-unit-1"), false);
-  assert.equal(
-    reserved.listings.some((item) => item.id === "apt-240-benziger-ave-unit-1"),
-    true,
-  );
+  assert.deepEqual(board.map((group) => group.id), ["available", "coming-up"]);
+  assert.equal(shownIds.has("apt-240-benziger-ave-unit-1"), false);
+  assert.equal(findListing("apt-240-benziger-ave-unit-1"), undefined);
+  assert.equal(routableListings().some((item) => item.id === "apt-240-benziger-ave-unit-1"), false);
+  assert.equal(findListing("apt-1-coonley-court-unit-1")?.status, "Application In Process");
   assert.equal(displayedStatus("RESERVED", "reserved"), "Reserved");
   assert.ok(available && available.listings.length > 0);
   assert.ok(comingUp && comingUp.listings.length > 0);
   for (const item of available.listings) {
     assert.equal(statusBoardSection(item.status), "available", item.id);
-    assert.equal(brokerIds.has(item.id), true);
+    assert.equal(shownIds.has(item.id), true);
   }
   for (const item of comingUp.listings) {
     assert.equal(statusBoardSection(item.status), "coming-up", item.id);
     assert.equal(displayedStatus(item.status, "coming-up"), "Coming Up");
   }
-  for (const item of reserved.listings) {
-    assert.equal(brokerIds.has(item.id), false, item.id);
+  for (const item of raw.listings.reserved) {
+    assert.equal(shownIds.has(item.id), false, item.id);
   }
-  for (const group of [...broker, ...admin]) {
+  for (const item of raw.listings.apartments) {
+    if (statusBoardSection(item.status) === "reserved") {
+      assert.equal(shownIds.has(item.id), false, item.id);
+    }
+  }
+  for (const group of board) {
     assertBedroomOrder(group.listings, group.id);
   }
   assert.equal(bedCount(available.listings[0]!), 0);
@@ -218,7 +222,7 @@ test("apartments sort by bedroom count, studios first, then address and unit", (
     }),
   ];
 
-  const broker = groupBoardListings(apartments, [], { includeReserved: false });
+  const broker = groupBoardListings(apartments, []);
   assert.deepEqual(
     broker.find((group) => group.id === "available")?.listings.map((item) => item.id),
     ["studio-early", "studio-late", "one-a", "one-b", "two-late", "unknown"],
@@ -251,7 +255,7 @@ test("Application In Process stays broker-visible with its own label", () => {
     assert.equal(displayedStatus(status), "Application In Process", status);
   }
   const apartments = [listing({ id: "pending", status: "Application In Process (not yet approved)" })];
-  const broker = groupBoardListings(apartments, [], { includeReserved: false });
+  const broker = groupBoardListings(apartments, []);
   const available = broker.find((group) => group.id === "available");
   assert.ok(available);
   assert.deepEqual(available.listings.map((item) => item.id), ["pending"]);
@@ -260,7 +264,7 @@ test("Application In Process stays broker-visible with its own label", () => {
   const raw = JSON.parse(fs.readFileSync(new URL("../data/rental-listings.json", import.meta.url), "utf8"));
   const coonley = raw.listings.apartments.find((item: Listing) => item.id === "apt-1-coonley-court-unit-1");
   assert.equal(coonley?.status, "Application In Process");
-  const live = groupBoardListings(raw.listings.apartments, raw.listings.reserved, { includeReserved: false });
+  const live = groupBoardListings(raw.listings.apartments, raw.listings.reserved);
   assert.equal(
     live.find((group) => group.id === "available")?.listings.some((item) => item.id === "apt-1-coonley-court-unit-1"),
     true,
