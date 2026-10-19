@@ -157,6 +157,7 @@ The source is the "Available Apartments" tab of the office Google Sheet (Availab
 
 1. Export that tab as CSV (Sheets connector or File > Download > CSV).
 2. `node scripts/sync-from-sheet.mjs path/to.csv --dry-run` to preview, then without `--dry-run` to write.
+   Columns are matched by header name, not by letter. The current Available tab is Property, Unit, Unit Type, Min Rent, Target Rent, Zip, Status, NYCHA, HPD/TrustFund, Utilities Included, Washer/Dryer, VT READY, Virtual Tour Links, Office Notes, Sqft. Virtual Tour Links (column M, after the old duplicate column A was removed) is the tour URL. If that header appears twice, the later column is used. Sqft on the sheet is ignored; square footage still comes from the Matterport layout files.
    Units not on the sheet are removed from `listings.apartments`; new rows are added; existing rows keep id, layout, sqft, and tour labels. `listings.reserved` and Turso claims / completed rentals are untouched, and `listings.reserved` is not rendered.
    Do not copy the sheet's "Reserved Apartments" tab into `listings.apartments` or `listings.reserved`. A unit that leaves the Available tab for that Reserved tab is removed from `listings.apartments` and does not come back onto the site.
    Rows on the Available tab whose status says Reserve, Reserved, Reservation, or Turnover-reserved are omitted from `listings.apartments` and are not shown. The script prints them as `OMITTED RESERVED, not shown`.
