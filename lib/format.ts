@@ -127,6 +127,7 @@ export function statusTone(status: string): Tone {
   if (value.includes("available")) return "ok";
   if (
     value.includes("reserved") ||
+    value.includes("application") ||
     value.includes("turnover") ||
     value.includes("cash") ||
     value.includes("credit")

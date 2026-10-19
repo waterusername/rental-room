@@ -9,6 +9,9 @@ import type { Listing } from "./types";
  * - Available → Available, shown to brokers and administrators
  * - Turn Over / Turnover In Progress → Coming Up, shown to brokers and administrators
  * - Reserve / Reserved → Reserved, administrators only
+ * - Application In Process (any wording with "application") → Available, shown to
+ *   brokers and administrators with an "Application In Process" badge. This wins
+ *   over a Reserved match in the same text, so a pending application stays visible.
  *
  * Any other status (credit check, under initial development, blank) stays in
  * Available so it remains broker-visible, and the card keeps the sheet wording.
@@ -45,6 +48,8 @@ export const BOARD_SECTIONS: readonly { id: BoardSectionId; title: string; lede:
 ];
 
 const RESERVED_STATUS = /\breserv(?:e|ed|ation)\b/;
+const APPLICATION_STATUS = /\bapplication\b/;
+export const APPLICATION_IN_PROCESS = "Application In Process";
 const TURNOVER_STATUS = /turn\s*over/;
 
 function normalizeStatus(status: string): string {
@@ -58,10 +63,16 @@ function normalizeStatus(status: string): string {
     .trim();
 }
 
+/** Sheet status "Application In Process (not yet approved)" and similar wording. */
+export function isApplicationInProcess(status: string): boolean {
+  return APPLICATION_STATUS.test(normalizeStatus(status));
+}
+
 /** Map a sheet status string onto a board section. */
 export function statusBoardSection(status: string): BoardSectionId {
   const value = normalizeStatus(status);
   if (!value) return "available";
+  if (isApplicationInProcess(status)) return "available";
   if (RESERVED_STATUS.test(value)) return "reserved";
   if (TURNOVER_STATUS.test(value)) return "coming-up";
   return "available";
@@ -81,6 +92,7 @@ export function displayedStatus(status: string, section?: BoardSectionId): strin
   const resolved = section ?? statusBoardSection(status);
   if (resolved === "coming-up") return "Coming Up";
   if (resolved === "reserved") return "Reserved";
+  if (isApplicationInProcess(status)) return APPLICATION_IN_PROCESS;
   if (normalizeStatus(status) === "available") return "Available";
   return statusLabel(status);
 }

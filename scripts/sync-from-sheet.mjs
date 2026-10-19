@@ -18,7 +18,12 @@
  * - Existing units keep their id, address spelling, bedrooms/baths/notes/prospect.
  *   Sheet fields (type, rents, zip, status, flags, tour, office notes) are refreshed.
  * - Tour URL comes from the second "Virtual Tour Links" column (column N).
- *   Sqft/layout mappings live in data/layout-sqft.json and data/floor-plans.json
+ * - A sheet status containing "Application" (e.g. "Application In Process (not yet
+ *   approved)") is written as "Application In Process". The site keeps it in the
+ *   broker-visible Available section with an "Application In Process" badge, even
+ *   if the unit also appears on the sheet's "Reserved Apartments" tab. Do not move
+ *   such a unit into listings.reserved; the script warns if one is already there.
+ * - Sqft/layout mappings live in data/layout-sqft.json and data/floor-plans.json
  *   keyed by Matterport id, and are not edited here.
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -59,6 +64,8 @@ function parseCsv(text) {
   return rows;
 }
 
+const APPLICATION_IN_PROCESS = "Application In Process";
+const normalizeStatus = (v) => (v && /\bapplication\b/i.test(v) ? APPLICATION_IN_PROCESS : v);
 const clean = (v) => { const s = (v ?? "").replace(/\s+/g, " ").trim(); return s === "" ? null : s; };
 const money = (v) => { const s = clean(v); if (!s) return null; const n = Number(s.replace(/[$,]/g, "")); return Number.isFinite(n) ? n : null; };
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -81,7 +88,7 @@ for (const r of rows.slice(headerIdx + 1)) {
   sheet.push({
     address: first, unit,
     unitType: clean(r[3]), minRent: money(r[4]), targetRent: money(r[5]), zip: clean(r[6]),
-    status: clean(r[7]), nycha: clean(r[8]), hpdTrustFund: clean(r[9]),
+    status: normalizeStatus(clean(r[7])), nycha: clean(r[8]), hpdTrustFund: clean(r[9]),
     utilitiesIncluded: clean(r[10]), washerDryer: clean(r[11]), tourReady: clean(r[12]),
     tourUrl: tour && /^https?:/.test(tour) ? tour : null, officeNotes: clean(r[14]),
   });
@@ -121,10 +128,23 @@ for (const s of sheet) {
 }
 const removed = current.filter((l) => !sheetKeys.has(keyOf(l.address, l.unit))).map((l) => `${l.address} ${l.unit} (${l.id})`);
 
+const reservedKeys = new Map((data.listings.reserved ?? []).map((l) => [keyOf(l.address, l.unit), l]));
+const reservedIdSet = new Set((data.listings.reserved ?? []).map((l) => l.id));
+const applicationConflicts = next
+  .filter((l) => l.status === APPLICATION_IN_PROCESS)
+  .filter((l) => reservedIdSet.has(l.id) || reservedKeys.has(keyOf(l.address, l.unit)))
+  .map((l) => `${l.address} ${l.unit} (${l.id})`);
+
 console.log(`Sheet apartments: ${sheet.length}`);
 console.log(`REMOVED (${removed.length}):`); removed.forEach((x) => console.log("  - " + x));
 console.log(`ADDED (${added.length}):`); added.forEach((x) => console.log("  + " + x));
 console.log(`UPDATED (${updated.length}):`); updated.forEach((x) => console.log("  ~ " + x));
+const applications = next.filter((l) => l.status === APPLICATION_IN_PROCESS).map((l) => `${l.address} ${l.unit}`);
+console.log(`APPLICATION IN PROCESS, broker-visible (${applications.length}):`); applications.forEach((x) => console.log("  * " + x));
+if (applicationConflicts.length) {
+  console.log(`WARNING: Application In Process units also in listings.reserved (they would stay hidden). Remove them from listings.reserved:`);
+  applicationConflicts.forEach((x) => console.log("  ! " + x));
+}
 
 if (!dryRun) {
   data.listings.apartments = next;
