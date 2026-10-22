@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-16T01:03:20.985Z",
+  "generatedAt": "2026-10-22T13:05:00.496Z",
   "note": "Apartment exteriors only, keyed by the normalized address. Refresh with npm run streetview.",
   "photos": {
     "1 coonley court": {
@@ -107,6 +107,17 @@
       "query": "14 Fancher Pl, Staten Island, NY 10303",
       "lat": 40.6378743,
       "lon": -74.1687367
+    },
+    "15 coonley court": {
+      "src": "/street-view/15-coonley-court.jpg",
+      "kind": "map",
+      "alt": "Map showing 15 Coonley Court, Staten Island",
+      "credit": "Location map · © OpenStreetMap",
+      "address": "15 Coonley Court",
+      "zip": "10303",
+      "query": "15 Coonley Court, Staten Island, NY 10303",
+      "lat": 40.6361684,
+      "lon": -74.15864
     },
     "15 orinoco place": {
       "src": "/street-view/15-orinoco-place.jpg",
