@@ -129,7 +129,9 @@ test("the published snapshot hides reserved units and labels turnover as Coming 
   assert.equal(shownIds.has("apt-240-benziger-ave-unit-1"), false);
   assert.equal(findListing("apt-240-benziger-ave-unit-1"), undefined);
   assert.equal(routableListings().some((item) => item.id === "apt-240-benziger-ave-unit-1"), false);
-  assert.equal(findListing("apt-1-coonley-court-unit-1")?.status, "Application In Process");
+  // 1 Coonley Court Unit 1 left the Available tab on 2026-10-22 (now on Reserved), so it is not shown.
+  assert.equal(findListing("apt-1-coonley-court-unit-1"), undefined);
+  assert.equal(shownIds.has("apt-1-coonley-court-unit-1"), false);
   assert.equal(displayedStatus("RESERVED", "reserved"), "Reserved");
   assert.ok(available && available.listings.length > 0);
   assert.ok(comingUp && comingUp.listings.length > 0);
@@ -323,12 +325,13 @@ test("Application In Process stays broker-visible with its own label", () => {
   assert.deepEqual(available.listings.map((item) => item.id), ["pending"]);
   assert.equal(statusTone("Application In Process"), "wait");
 
+  // Published snapshot: every Application In Process row is broker-visible in Available.
   const raw = JSON.parse(fs.readFileSync(new URL("../data/rental-listings.json", import.meta.url), "utf8"));
-  const coonley = raw.listings.apartments.find((item: Listing) => item.id === "apt-1-coonley-court-unit-1");
-  assert.equal(coonley?.status, "Application In Process");
   const live = groupBoardListings(raw.listings.apartments, raw.listings.reserved);
-  assert.equal(
-    live.find((group) => group.id === "available")?.listings.some((item) => item.id === "apt-1-coonley-court-unit-1"),
-    true,
-  );
+  const liveAvailable = new Set(live.find((group) => group.id === "available")?.listings.map((item) => item.id));
+  for (const item of raw.listings.apartments as Listing[]) {
+    if (item.status === "Application In Process" && hasMatterportTour(item)) {
+      assert.equal(liveAvailable.has(item.id), true, item.id);
+    }
+  }
 });
