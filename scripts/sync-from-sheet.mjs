@@ -20,7 +20,10 @@
  * - Units on the site but not on the sheet are removed from listings.apartments.
  * - listings.reserved and Turso data (claims, completed rentals) are never touched.
  *   The site does not render listings.reserved. Do not copy the Reserved Apartments
- *   tab into listings.apartments or listings.reserved.
+ *   tab into listings.apartments or listings.reserved. A new apartments id may
+ *   match a row already in listings.reserved. Leave that reserved row as it is.
+ *   The board shows the apartments row when its status differs, and does not
+ *   also render the archived row.
  * - Existing units keep their id, address spelling, bedrooms/baths/notes/prospect.
  *   Sheet fields (type, rents, zip, status, flags, tour, office notes) are refreshed.
  * - A sheet row with no Matterport URL in Virtual Tour Links is stored with no

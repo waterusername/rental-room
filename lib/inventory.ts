@@ -1,5 +1,5 @@
 import raw from "@/data/rental-listings.json";
-import { boardSectionFor, groupBoardListings, isReservedListing as listingIsReserved } from "./board";
+import { boardSectionFor, groupBoardListings, isReservedListing as listingIsReserved, reservedIdsThatHide } from "./board";
 import type { BoardGroup, BoardSectionId } from "./board";
 import { CATEGORY_ORDER } from "./categories";
 import { addressKey, unitKey } from "./match";
@@ -54,7 +54,10 @@ export function getListing(id: string): Listing | undefined {
   return allListings().find((listing) => listing.id === id);
 }
 
-const reservedIds: ReadonlySet<string> = new Set(inventory.listings.reserved.map((listing) => listing.id));
+const reservedIds: ReadonlySet<string> = reservedIdsThatHide(
+  inventory.listings.apartments,
+  inventory.listings.reserved,
+);
 
 function reservedIdSet(extraReservedIds?: Iterable<string>): ReadonlySet<string> {
   if (!extraReservedIds) return reservedIds;
@@ -63,12 +66,12 @@ function reservedIdSet(extraReservedIds?: Iterable<string>): ReadonlySet<string>
   return ids;
 }
 
-/** Sheet reserved ids, plus broker claims when those ids are passed in. */
+/** Archived reserved ids that still hide a matching apartments row, plus broker claims. */
 export function listingReservedIds(extraReservedIds?: Iterable<string>): ReadonlySet<string> {
   return reservedIdSet(extraReservedIds);
 }
 
-/** Units the site can open. Reserved sheet rows and `listings.reserved` are omitted. */
+/** Units the site can open. Reserved statuses are omitted. A live apartments row that reuses a reserved id is included once. */
 export function routableListings(): Listing[] {
   const seen = new Set<string>();
   const rows: Listing[] = [];
