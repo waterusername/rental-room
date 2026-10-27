@@ -20,8 +20,11 @@ import type { Listing } from "./types";
  * Any other status (credit check, under initial development, blank) stays in
  * Available when the unit has a Matterport tour, and the card keeps the sheet wording.
  * Without a tour it is Coming Up.
- * A row in `listings.reserved` is not rendered, even when its status text differs,
- * unless that status is Application In Process.
+ * A row in `listings.reserved` is not rendered. If an apartments row reuses that
+ * id with a different status, the apartments row is the one shown (one card,
+ * one unit page). The archived row stays off the board. When the apartments
+ * row still has the archived status, it stays hidden. Application In Process
+ * stays visible either way.
  * A broker claim is not written into that file. Callers pass its unit id in
  * `extraReservedIds`. A claim removes the unit from the site for every role.
  */
@@ -86,7 +89,29 @@ export function statusBoardSection(status: string): BoardSectionId {
 }
 
 /**
- * Sheet reserved wording, a `listings.reserved` id, or a broker claim.
+ * Ids from `listings.reserved` that hide an apartments row.
+ * A live apartments row with a different status is left out of this set, so
+ * the sheet row is shown once and the archived row is not a second card.
+ * Ids that exist only in `listings.reserved` are included; those rows are not
+ * in the apartments list, so they still do not appear.
+ */
+export function reservedIdsThatHide(apartments: readonly Listing[], reserved: readonly Listing[]): Set<string> {
+  const liveStatus = new Map<string, string>();
+  for (const listing of apartments) {
+    if (!liveStatus.has(listing.id)) liveStatus.set(listing.id, listing.status);
+  }
+  const ids = new Set<string>();
+  for (const archived of reserved) {
+    const status = liveStatus.get(archived.id);
+    if (status != null && status !== archived.status) continue;
+    ids.add(archived.id);
+  }
+  return ids;
+}
+
+/**
+ * Sheet reserved wording, a broker claim, or an archived reserved id whose
+ * apartments row still has that same status.
  * Application In Process stays visible even when the same text or id also matches reserved.
  */
 export function isReservedListing(listing: Listing, reservedIds: ReadonlySet<string>): boolean {
@@ -141,7 +166,7 @@ export function groupBoardListings(
   reserved: Listing[],
   options: { extraReservedIds?: Iterable<string> } = {},
 ): BoardGroup[] {
-  const reservedIds = new Set(reserved.map((listing) => listing.id));
+  const reservedIds = reservedIdsThatHide(apartments, reserved);
   if (options.extraReservedIds) {
     for (const id of options.extraReservedIds) reservedIds.add(id);
   }

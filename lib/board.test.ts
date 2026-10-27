@@ -10,7 +10,9 @@ import {
   statusBoardSection,
 } from "./board.ts";
 import { bedCount, statusTone } from "./format.ts";
+import { listingSqft } from "./floor-plan.ts";
 import { findListing, routableListings } from "./inventory.ts";
+import { exteriorFor } from "./street-view.ts";
 import type { Listing } from "./types.ts";
 
 function listing(partial: Pick<Listing, "id" | "status"> & Partial<Listing>): Listing {
@@ -98,6 +100,38 @@ test("reserved rows are omitted for every viewer, including turnover-reserved", 
   assert.equal(isReservedListing(apartments[4]!, reservedIds), false);
 });
 
+test("a live apartments row that reuses a reserved id is shown once", () => {
+  const live = listing({
+    id: "apt-shared",
+    status: "Turnover In Progress",
+    address: "230 Benziger Ave",
+    unit: "Unit 2",
+    unitType: "3B/1B",
+    tours: [],
+    minRent: 2800,
+    targetRent: 3550,
+    notes: null,
+  });
+  const archived = listing({
+    id: "apt-shared",
+    status: "RESERVED",
+    address: "230 Benziger Ave",
+    unit: "Unit 2",
+    unitType: "3br/1BA",
+    tours: [],
+    targetRent: null,
+    notes: "company info sent - Helena",
+  });
+  const onlyReserved = listing({ id: "apt-archive-only", status: "RESERVED", tours: [] });
+  const board = groupBoardListings([live], [archived, onlyReserved]);
+  const shown = board.flatMap((group) => group.listings);
+
+  assert.deepEqual(shown.map((item) => item.id), ["apt-shared"]);
+  assert.equal(shown[0], live);
+  assert.equal(board.find((group) => group.id === "coming-up")?.listings[0]?.status, "Turnover In Progress");
+  assert.equal(new Set(shown.map((item) => item.id)).size, shown.length);
+});
+
 test("broker claims leave the site for every viewer", () => {
   const apartments = [
     listing({ id: "open", status: "Available" }),
@@ -147,19 +181,50 @@ test("the published snapshot hides reserved units and labels turnover as Coming 
     "apt-128-port-richmond-ave-unir-3a",
     "apt-124-alaska-st-unit-2-bsmt",
     "apt-99-wright-st-unit-2",
+    "apt-230-benziger-ave-unit-2",
   ];
   for (const id of noTourIds) {
     assert.equal(comingUp.listings.some((item) => item.id === id), true, id);
     assert.equal(available.listings.some((item) => item.id === id), false, id);
   }
+  assert.equal(available.listings.length, 28);
+  assert.equal(comingUp.listings.length, 7);
+  assert.equal(raw.listings.apartments.some((item) => item.id === "apt-230-benziger-ave-1"), false);
   for (const item of comingUp.listings) {
     const turnover = statusBoardSection(item.status) === "coming-up";
     assert.equal(turnover || !hasMatterportTour(item), true, item.id);
     assert.equal(displayedStatus(item.status, "coming-up"), "Coming Up");
   }
+  const shownList = board.flatMap((group) => group.listings);
+  assert.equal(new Set(shownList.map((item) => item.id)).size, shownList.length);
+  const routes = routableListings();
+  assert.equal(new Set(routes.map((item) => item.id)).size, routes.length);
+  const liveById = new Map(raw.listings.apartments.map((item) => [item.id, item]));
   for (const item of raw.listings.reserved) {
+    const live = liveById.get(item.id);
+    if (live && live.status !== item.status) {
+      assert.equal(shownIds.has(item.id), true, item.id);
+      const shown = shownList.find((row) => row.id === item.id);
+      assert.equal(shown?.status, live.status);
+      assert.notEqual(shown?.status, item.status);
+      continue;
+    }
     assert.equal(shownIds.has(item.id), false, item.id);
   }
+  const benziger = findListing("apt-230-benziger-ave-unit-2");
+  assert.ok(benziger);
+  assert.equal(routes.filter((item) => item.id === benziger.id).length, 1);
+  assert.equal(benziger.address, "230 Benziger Ave");
+  assert.equal(benziger.unit, "Unit 2");
+  assert.equal(benziger.unitType, "3B/1B");
+  assert.equal(benziger.status, "Turnover In Progress");
+  assert.equal(benziger.minRent, 2800);
+  assert.equal(benziger.targetRent, 3550);
+  assert.deepEqual(benziger.tours, []);
+  assert.equal(benziger.notes, null);
+  assert.equal(listingSqft(benziger), null);
+  assert.equal(exteriorFor(benziger)?.src, "/exteriors/apt-230-benziger-ave.jpg");
+  assert.equal(comingUp.listings.some((item) => item.id === benziger.id), true);
   for (const item of raw.listings.apartments) {
     if (statusBoardSection(item.status) === "reserved") {
       assert.equal(shownIds.has(item.id), false, item.id);
