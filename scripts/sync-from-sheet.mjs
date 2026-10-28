@@ -52,7 +52,11 @@ const dataPath = resolve(root, "data/rental-listings.json");
 
 // Known sheet typos -> address spelling used on the site.
 const ADDRESS_ALIASES = { "9 baltc avenue": "9 baltic avenue" };
-const UNIT_FIXES = [[/^Uni t\s*(\w+)$/i, "Unit $1"]];
+// Known unit typos. "Uni t1" is a split word; "UNit 2" is a case typo.
+const UNIT_FIXES = [
+  [/^Uni t\s*(\w+)$/i, "Unit $1"],
+  [/^unit(\s+.+)$/i, "Unit$1"],
+];
 
 const APPLICATION_IN_PROCESS = "Application In Process";
 const isApplication = (v) => Boolean(v && /\bapplication\b/i.test(v));
