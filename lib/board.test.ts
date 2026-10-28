@@ -179,16 +179,34 @@ test("the published snapshot hides reserved units and labels turnover as Coming 
     "apt-116-hillside-ave-unit-1",
     "apt-14-fancher-pl-unit-1",
     "apt-128-port-richmond-ave-unir-3a",
-    "apt-124-alaska-st-unit-2-bsmt",
     "apt-99-wright-st-unit-2",
     "apt-230-benziger-ave-unit-2",
+    "apt-15-coonley-court-unit-1",
+    "apt-187-york-ave-unit-2",
   ];
   for (const id of noTourIds) {
     assert.equal(comingUp.listings.some((item) => item.id === id), true, id);
     assert.equal(available.listings.some((item) => item.id === id), false, id);
   }
-  assert.equal(available.listings.length, 28);
+  assert.equal(available.listings.length, 29);
   assert.equal(comingUp.listings.length, 7);
+  const alaska = findListing("apt-124-alaska-st-unit-2-bsmt");
+  assert.ok(alaska);
+  assert.equal(hasMatterportTour(alaska), true);
+  assert.equal(available.listings.some((item) => item.id === alaska.id), true);
+  assert.equal(listingSqft(alaska), 597);
+  assert.equal(alaska.tours[0]?.url, "https://my.matterport.com/show/?m=qUYikyn8yFK");
+  const york = findListing("apt-187-york-ave-unit-2");
+  assert.ok(york);
+  assert.equal(york.address, "187 York Ave");
+  assert.equal(york.unit, "Unit 2");
+  assert.equal(york.unitType, "2BR/1BA");
+  assert.equal(york.zip, "10301");
+  assert.equal(york.status, "Turnover In Progress");
+  assert.equal(york.minRent, null);
+  assert.equal(york.targetRent, null);
+  assert.deepEqual(york.tours, []);
+  assert.equal(listingSqft(york), null);
   assert.equal(raw.listings.apartments.some((item) => item.id === "apt-230-benziger-ave-1"), false);
   for (const item of comingUp.listings) {
     const turnover = statusBoardSection(item.status) === "coming-up";

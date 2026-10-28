@@ -6,12 +6,14 @@ import { GrinbergNotice } from "@/components/GrinbergNotice";
 import { TourViewer } from "@/components/TourViewer";
 import { displayedStatus, type BoardSectionId } from "@/lib/board";
 import { claimBrokerLabel, claimNotifyLabel, formatClaimedAt, type ClaimSummary } from "@/lib/claim-record";
+import { listingSqft } from "@/lib/floor-plan";
 import {
   applyHref,
   bathCount,
   bedCount,
   formatMoney,
   isNamedPersonPhone,
+  listedRent,
   telHref,
   unitLabel,
   utilitiesLabel,
@@ -89,13 +91,20 @@ export function UnitDetail({
           ) : null}
           {nycha ? <Fact label="NYCHA" value={nycha} /> : null}
           {hpd ? <Fact label="HPD / Trust Fund" value={hpd} /> : null}
-          {listing.minRent != null ? <Fact label="Min rent" value={formatMoney(listing.minRent)} /> : null}
-          {listing.targetRent != null ? <Fact label="Target rent" value={formatMoney(listing.targetRent)} /> : null}
-          {listing.potentialRent != null ? (
+          {listedRent(listing.minRent) != null ? <Fact label="Min rent" value={formatMoney(listing.minRent)} /> : null}
+          {listedRent(listing.targetRent) != null ? (
+            <Fact label="Target rent" value={formatMoney(listing.targetRent)} />
+          ) : null}
+          {listedRent(listing.potentialRent) != null ? (
             <Fact label="Potential rent" value={formatMoney(listing.potentialRent)} />
           ) : null}
-          {listing.minRent == null && listing.targetRent == null && listing.potentialRent == null ? (
-            <Fact label="Rent" value="Not listed" />
+          {listedRent(listing.minRent) == null &&
+          listedRent(listing.targetRent) == null &&
+          listedRent(listing.potentialRent) == null ? (
+            <Fact label="Rent" value="Rent TBD" />
+          ) : null}
+          {floorPlans.length === 0 && listingSqft(listing) != null ? (
+            <Fact label="SQFT" value={listingSqft(listing)!.toLocaleString("en-US")} />
           ) : null}
           <Fact label="Status" value={displayedStatus(listing.status, section)} />
           {listing.zip ? <Fact label="Zip" value={listing.zip} /> : null}

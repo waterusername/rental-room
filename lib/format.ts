@@ -6,30 +6,44 @@ const money = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
+/** A sheet rent worth showing. Blank, zero, and non-numeric values are not a price. */
+export function listedRent(value: number | null): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return null;
+  return value;
+}
+
 export function formatMoney(value: number | null): string {
-  if (value == null) return "Not listed";
-  return money.format(value);
+  const rent = listedRent(value);
+  if (rent == null) return "Rent TBD";
+  return money.format(rent);
 }
 
 export function comparableRent(listing: Listing): number | null {
-  return listing.targetRent ?? listing.minRent ?? listing.potentialRent;
+  return listedRent(listing.targetRent) ?? listedRent(listing.minRent) ?? listedRent(listing.potentialRent);
 }
 
 export function rentSummary(listing: Listing): string {
-  const { minRent, targetRent, potentialRent } = listing;
+  const minRent = listedRent(listing.minRent);
+  const targetRent = listedRent(listing.targetRent);
+  const potentialRent = listedRent(listing.potentialRent);
   if (minRent != null && targetRent != null && minRent !== targetRent) {
     return `${formatMoney(minRent)} min · ${formatMoney(targetRent)} target`;
   }
   if (targetRent != null) return `${formatMoney(targetRent)} target`;
   if (minRent != null) return formatMoney(minRent);
   if (potentialRent != null) return `${formatMoney(potentialRent)} potential`;
-  return "Rent not listed";
+  return "Rent TBD";
 }
 
 export function unitLabel(unit: string): string {
   const trimmed = unit.trim();
   if (!trimmed) return "Unit not listed";
-  if (/^(unit|#)/i.test(trimmed)) return trimmed;
+  if (/^#/.test(trimmed)) return trimmed;
+  const prefixed = trimmed.match(/^unit(?:\s+([\s\S]+))?$/i);
+  if (prefixed) {
+    const rest = prefixed[1]?.trim();
+    return rest ? `Unit ${rest}` : "Unit";
+  }
   return `Unit ${trimmed}`;
 }
 

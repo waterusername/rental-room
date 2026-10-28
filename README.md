@@ -155,7 +155,7 @@ Use Stripe test keys until a real charge should go through. These variables stil
 4. A row in `listings.reserved` is not rendered. An apartments row that reuses one of those ids is shown when its status differs from the archived row: one card and one unit page, using the apartments fields. When the apartments row still has the archived status, it stays hidden. Application In Process stays visible. `listings.commercial`, `listings.garages`, `listings.storages`, `listings.pipeline`, and `listings.residentialTracker` stay in the file so the shape is stable. Those tabs are not pages.
 5. Restart the dev server, or redeploy. The file is imported at build time.
 
-Rows from other tabs are not added as cards. The current snapshot has 35 apartments. Reserved rows stay in `listings.reserved` and are not shown.
+Rows from other tabs are not added as cards. The current snapshot has 36 apartments. Reserved rows stay in `listings.reserved` and are not shown.
 
 `contact.applyEmail` is the apply mailto on each unit. The office phone is a call link. Dimitry’s number is plain text in the footer, not a call button.
 

@@ -21,7 +21,7 @@ export function floorPlansFor(
     if (!src || seen.has(src)) continue;
     seen.add(src);
     const caption = tour.label?.trim() || null;
-    const sqft = id != null && Number.isFinite(sqftByModel[id]) ? sqftByModel[id] : null;
+    const sqft = sqftForModel(id);
     found.push({
       src,
       alt: caption
@@ -34,9 +34,15 @@ export function floorPlansFor(
   return found;
 }
 
+function sqftForModel(id: string | null): number | null {
+  if (id == null || !Number.isFinite(sqftByModel[id])) return null;
+  return sqftByModel[id];
+}
+
 export function listingSqft(listing: Pick<Listing, "address" | "unit" | "tours">): number | null {
-  for (const plan of floorPlansFor(listing)) {
-    if (plan.sqft != null) return plan.sqft;
+  for (const tour of listing.tours) {
+    const sqft = sqftForModel(matterportModelId(tour.url));
+    if (sqft != null) return sqft;
   }
   return null;
 }

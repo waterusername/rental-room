@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-22T13:05:00.496Z",
+  "generatedAt": "2026-10-28T13:17:06.200Z",
   "note": "Apartment exteriors only, keyed by the normalized address. Refresh with npm run streetview.",
   "photos": {
     "1 coonley court": {
@@ -174,6 +174,17 @@
       "panoid": "8G6WKaL34M5A_lH_xILzhA",
       "distanceMeters": 18,
       "heading": 17
+    },
+    "187 york avenue": {
+      "src": "/street-view/187-york-avenue.jpg",
+      "kind": "map",
+      "alt": "Map showing 187 York Ave, Staten Island",
+      "credit": "Location map · © OpenStreetMap",
+      "address": "187 York Ave",
+      "zip": "10301",
+      "query": "187 York Ave, Staten Island, NY 10301",
+      "lat": 40.6418038,
+      "lon": -74.087549
     },
     "21 stanley avenue": {
       "src": "/street-view/21-stanley-avenue.jpg",

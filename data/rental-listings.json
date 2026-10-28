@@ -1,7 +1,7 @@
 {
   "source": {
     "name": "Available Apartments",
-    "snapshotDate": "2026-10-27",
+    "snapshotDate": "2026-10-28",
     "note": "The site reads this file, not the Google Sheet. Status Available is the Available section. Turnover In Progress or Turn Over In Progress is shown as Coming Up. Reserve or Reserved is administrators only, whether the row is in listings.apartments or listings.reserved. Application In Process stays in Available, broker-visible, with an Application In Process badge. Other apartment statuses stay in Available."
   },
   "contact": {
@@ -724,7 +724,7 @@
         "hpdTrustFund": "YES",
         "utilitiesIncluded": "NO",
         "washerDryer": "NO",
-        "tourReady": "Yes",
+        "tourReady": "NO",
         "tours": [],
         "officeNotes": "Unable to Acces Key did not work - DV Notes 10/20/2026",
         "reservationDate": null,
@@ -749,8 +749,13 @@
         "hpdTrustFund": "YES",
         "utilitiesIncluded": "NO",
         "washerDryer": "YES",
-        "tourReady": "Yes",
-        "tours": [],
+        "tourReady": "DONE",
+        "tours": [
+          {
+            "url": "https://my.matterport.com/show/?m=qUYikyn8yFK",
+            "label": null
+          }
+        ],
         "officeNotes": null,
         "reservationDate": null,
         "daysSinceReservation": null,
@@ -774,7 +779,7 @@
         "hpdTrustFund": "YES",
         "utilitiesIncluded": "NO",
         "washerDryer": "NO",
-        "tourReady": "Yes",
+        "tourReady": "NO",
         "tours": [],
         "officeNotes": null,
         "reservationDate": null,
@@ -978,7 +983,7 @@
         "hpdTrustFund": "YES",
         "utilitiesIncluded": "NO",
         "washerDryer": "YES",
-        "tourReady": "DONE",
+        "tourReady": "NO",
         "officeNotes": null,
         "potentialRent": null,
         "tours": [],
@@ -1023,6 +1028,31 @@
         "minRent": 2800,
         "targetRent": 3550,
         "zip": "10303",
+        "status": "Turnover In Progress",
+        "nycha": "YES",
+        "hpdTrustFund": "YES",
+        "utilitiesIncluded": "NO",
+        "washerDryer": "NO",
+        "tourReady": "NO",
+        "officeNotes": null,
+        "potentialRent": null,
+        "tours": [],
+        "reservationDate": null,
+        "daysSinceReservation": null,
+        "bedrooms": null,
+        "baths": null,
+        "prospect": null,
+        "notes": null
+      },
+      {
+        "id": "apt-187-york-ave-unit-2",
+        "category": "apartment",
+        "address": "187 York Ave",
+        "unit": "Unit 2",
+        "unitType": "2BR/1BA",
+        "minRent": null,
+        "targetRent": null,
+        "zip": "10301",
         "status": "Turnover In Progress",
         "nycha": "YES",
         "hpdTrustFund": "YES",

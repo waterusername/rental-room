@@ -252,3 +252,33 @@ test("the parser keeps quoted commas inside a field", () => {
   const rows = parseCsv('Property,Office Notes\n"1 Test, Street","a, b"\n');
   assert.deepEqual(rows[1], ["1 Test, Street", "a, b"]);
 });
+
+test("a unit case typo is stored as Unit, and blank rents stay blank", () => {
+  const { apartments } = readAvailableApartments(csv(CURRENT_HEADERS, [
+    {
+      Property: "187 York Ave",
+      Unit: "UNit 2",
+      "Unit Type": "2BR/1BA",
+      "Min Rent": "",
+      "Target Rent": "",
+      Zip: "10301",
+      Status: "Turnover In Progress",
+      NYCHA: "YES",
+      "HPD/TrustFund": "YES",
+      "Utilities Included": "NO",
+      "Washer/Dryer": "NO",
+      "VT READY": "NO",
+      "Virtual Tour Links": "",
+      "Office Notes": "",
+      Sqft: "",
+    },
+  ]));
+  assert.equal(apartments.length, 1);
+  assert.equal(apartments[0].unit, "Unit 2");
+  assert.equal(apartments[0].unitType, "2BR/1BA");
+  assert.equal(apartments[0].zip, "10301");
+  assert.equal(apartments[0].status, "Turnover In Progress");
+  assert.equal(apartments[0].minRent, null);
+  assert.equal(apartments[0].targetRent, null);
+  assert.equal(apartments[0].tourUrl, null);
+});
