@@ -1,7 +1,7 @@
 {
   "source": {
     "name": "Available Apartments",
-    "snapshotDate": "2026-10-29",
+    "snapshotDate": "2026-10-30",
     "note": "The site reads this file, not the Google Sheet. Status Available is the Available section. Turnover In Progress or Turn Over In Progress is shown as Coming Up. Reserve or Reserved is administrators only, whether the row is in listings.apartments or listings.reserved. Application In Process stays in Available, broker-visible, with an Application In Process badge. Other apartment statuses stay in Available."
   },
   "contact": {
@@ -193,36 +193,6 @@
         "tours": [
           {
             "url": "https://my.matterport.com/show/?m=xDgj5LpUzLg",
-            "label": null
-          }
-        ],
-        "officeNotes": null,
-        "reservationDate": null,
-        "daysSinceReservation": null,
-        "bedrooms": null,
-        "baths": null,
-        "prospect": null,
-        "notes": null
-      },
-      {
-        "id": "apt-402-404-jersey-street-unit-2f",
-        "category": "apartment",
-        "address": "402-404 Jersey Street",
-        "unit": "Unit 2F",
-        "unitType": "2B/1B",
-        "minRent": 2200,
-        "targetRent": 2700,
-        "potentialRent": null,
-        "zip": "10301",
-        "status": "Available",
-        "nycha": "YES",
-        "hpdTrustFund": "YES",
-        "utilitiesIncluded": "NO",
-        "washerDryer": "NO",
-        "tourReady": "DONE",
-        "tours": [
-          {
-            "url": "https://my.matterport.com/show/?m=ye18d16aSah",
             "label": null
           }
         ],
