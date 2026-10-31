@@ -204,6 +204,12 @@ test("the published snapshot hides reserved units and labels turnover as Coming 
   assert.equal(available.listings.some((item) => item.id === wright.id), true);
   assert.equal(listingSqft(wright), 765);
   assert.equal(wright.tours[0]?.url, "https://my.matterport.com/show/?m=B48unFA5foS");
+  const morningstar = findListing("apt-211-morningstar-unit-2");
+  assert.ok(morningstar);
+  assert.equal(hasMatterportTour(morningstar), true);
+  assert.equal(available.listings.some((item) => item.id === morningstar.id), true);
+  assert.equal(listingSqft(morningstar), 1036);
+  assert.equal(morningstar.tours[0]?.url, "https://my.matterport.com/show/?m=eG1iREzVDom");
   const york = findListing("apt-187-york-ave-unit-2");
   assert.ok(york);
   assert.equal(york.address, "187 York Ave");
