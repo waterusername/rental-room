@@ -177,7 +177,6 @@ test("the published snapshot hides reserved units and labels turnover as Coming 
   }
   const noTourIds = [
     "apt-116-hillside-ave-unit-1",
-    "apt-14-fancher-pl-unit-1",
     "apt-128-port-richmond-ave-unir-3a",
     "apt-230-benziger-ave-unit-2",
     "apt-15-coonley-court-unit-1",
@@ -187,6 +186,17 @@ test("the published snapshot hides reserved units and labels turnover as Coming 
     assert.equal(comingUp.listings.some((item) => item.id === id), true, id);
     assert.equal(available.listings.some((item) => item.id === id), false, id);
   }
+  const fancher = findListing("apt-14-fancher-pl-unit-1");
+  assert.ok(fancher);
+  assert.equal(fancher.status, "Turnover In Progress");
+  assert.equal(fancher.tourReady, "DONE");
+  assert.equal(fancher.washerDryer, "YES");
+  assert.equal(hasMatterportTour(fancher), true);
+  assert.deepEqual(fancher.tours, [
+    { url: "https://my.matterport.com/show/?m=qmnU3n9cwNr", label: null },
+  ]);
+  assert.equal(comingUp.listings.some((item) => item.id === fancher.id), true);
+  assert.equal(available.listings.some((item) => item.id === fancher.id), false);
   // 402-404 Jersey Street Unit 2F left the Available tab on 2026-10-30, so it is not shown.
   assert.equal(findListing("apt-402-404-jersey-street-unit-2f"), undefined);
   assert.equal(shownIds.has("apt-402-404-jersey-street-unit-2f"), false);
