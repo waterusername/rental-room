@@ -1,7 +1,7 @@
 {
   "source": {
     "name": "Available Apartments",
-    "snapshotDate": "2026-10-30",
+    "snapshotDate": "2026-11-06",
     "note": "The site reads this file, not the Google Sheet. Status Available is the Available section. Turnover In Progress or Turn Over In Progress is shown as Coming Up. Reserve or Reserved is administrators only, whether the row is in listings.apartments or listings.reserved. Application In Process stays in Available, broker-visible, with an Application In Process badge. Other apartment statuses stay in Available."
   },
   "contact": {
@@ -982,11 +982,16 @@
         "nycha": "YES",
         "hpdTrustFund": "YES",
         "utilitiesIncluded": "YES both",
-        "washerDryer": "NO",
-        "tourReady": "NO",
+        "washerDryer": "YES",
+        "tourReady": "DONE",
         "officeNotes": null,
         "potentialRent": null,
-        "tours": [],
+        "tours": [
+          {
+            "url": "https://my.matterport.com/show/?m=qmnU3n9cwNr",
+            "label": null
+          }
+        ],
         "reservationDate": null,
         "daysSinceReservation": null,
         "bedrooms": null,
