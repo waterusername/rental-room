@@ -200,7 +200,10 @@ test("the published snapshot hides reserved units and labels turnover as Coming 
   // 402-404 Jersey Street Unit 2F left the Available tab on 2026-10-30, so it is not shown.
   assert.equal(findListing("apt-402-404-jersey-street-unit-2f"), undefined);
   assert.equal(shownIds.has("apt-402-404-jersey-street-unit-2f"), false);
-  assert.equal(available.listings.length, 29);
+  // 627 Cary Avenue Unit 1 left the Available tab on 2026-11-13 (reserved 11/12/2026), so it is not shown.
+  assert.equal(findListing("apt-627-cary-avenue-unit-1"), undefined);
+  assert.equal(shownIds.has("apt-627-cary-avenue-unit-1"), false);
+  assert.equal(available.listings.length, 28);
   assert.equal(comingUp.listings.length, 6);
   const alaska = findListing("apt-124-alaska-st-unit-2-bsmt");
   assert.ok(alaska);
