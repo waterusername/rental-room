@@ -1,8 +1,8 @@
 {
   "source": {
     "name": "Available Apartments",
-    "snapshotDate": "2026-11-06",
-    "note": "The site reads this file, not the Google Sheet. Status Available is the Available section. Turnover In Progress or Turn Over In Progress is shown as Coming Up. Reserve or Reserved is administrators only, whether the row is in listings.apartments or listings.reserved. Application In Process stays in Available, broker-visible, with an Application In Process badge. Other apartment statuses stay in Available."
+    "snapshotDate": "2026-11-13",
+    "note": "The site reads this file, not the Google Sheet. Status Available is the Available section. Turnover In Progress or Turn Over In Progress is shown as Coming Up. Reserve or Reserved is administrators only, whether the row is in listings.apartments or listings.reserved. Application In Process stays in Available, broker-visible, with an Application In Process badge. Other apartment statuses stay in Available. 627 Cary Avenue Unit 1 was removed on 2026-11-13 because it left the Available tab (now Reserved as of 11/12/2026)."
   },
   "contact": {
     "applyEmail": "ApplyGrinberg@gmail.com",
@@ -257,36 +257,6 @@
           }
         ],
         "officeNotes": "7/24 Toilet and foyer Needs to be cleaned. foyer has window screens need to be installed or removed to basement",
-        "reservationDate": null,
-        "daysSinceReservation": null,
-        "bedrooms": null,
-        "baths": null,
-        "prospect": null,
-        "notes": null
-      },
-      {
-        "id": "apt-627-cary-avenue-unit-1",
-        "category": "apartment",
-        "address": "627 Cary Avenue",
-        "unit": "Unit 1",
-        "unitType": "3B/1B",
-        "minRent": 2800,
-        "targetRent": 3550,
-        "potentialRent": null,
-        "zip": "10310",
-        "status": "Available",
-        "nycha": "YES",
-        "hpdTrustFund": "YES",
-        "utilitiesIncluded": "NO",
-        "washerDryer": "NO",
-        "tourReady": "DONE",
-        "tours": [
-          {
-            "url": "https://my.matterport.com/show/?m=TX3QNPRZxbM",
-            "label": null
-          }
-        ],
-        "officeNotes": null,
         "reservationDate": null,
         "daysSinceReservation": null,
         "bedrooms": null,
