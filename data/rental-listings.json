@@ -1,7 +1,7 @@
 {
   "source": {
     "name": "Available Apartments",
-    "snapshotDate": "2026-11-21",
+    "snapshotDate": "2026-11-24",
     "note": "The site reads this file, not the Google Sheet. Status Available is the Available section. Turnover In Progress or Turn Over In Progress is shown as Coming Up. Reserve or Reserved is administrators only, whether the row is in listings.apartments or listings.reserved. Application In Process stays in Available, broker-visible, with an Application In Process badge. Other apartment statuses stay in Available. 627 Cary Avenue Unit 1 was removed on 2026-11-13 because it left the Available tab (now Reserved as of 11/12/2026)."
   },
   "contact": {
@@ -906,7 +906,7 @@
         "status": "Available",
         "nycha": "YES",
         "hpdTrustFund": "YES",
-        "utilitiesIncluded": "NO",
+        "utilitiesIncluded": "YES both",
         "washerDryer": "YES",
         "tourReady": "Yes",
         "officeNotes": null,
